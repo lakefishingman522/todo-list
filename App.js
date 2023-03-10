@@ -1,16 +1,7 @@
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
 import HomePage from "./app/pages/HomePage";
+import LoginPage from "./app/pages/LoginPage";
+import NavigatorPage from "./app/pages/NavigatorPage";
 
 export default function App() {
-  return <HomePage />;
+  return <NavigatorPage />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
