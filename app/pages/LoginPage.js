@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  Button,
   Text,
   useWindowDimensions,
   View,
@@ -12,109 +11,179 @@ import AppTextField from "../components/AppTextField";
 import AppButton from "../components/AppButton";
 import colors from "../config/colors";
 import axios from "axios";
+import { Pressable } from "react-native";
 
 export default function LoginPage({ navigation }) {
   const { height, width } = useWindowDimensions();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  let users = [];
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpPassword, setSignUpPassword] = useState("");
+  const [signUpOTP, setSignUpOTP] = useState("");
+  const [users, setUsers] = useState([]);
+  const [currentTab, setCurrentTab] = useState(0);
+  const [showPasswordLogin, setShowPasswordLogin] = useState(0);
+  const [showPasswordSignUp, setShowPasswordSignUp] = useState(0);
 
   useEffect(() => {
     async function getUsers() {
       const user = await axios("https://jsonplaceholder.typicode.com/users");
-      users = user.data;
+      setUsers([...user.data]);
     }
     getUsers();
   }, []);
 
+  const switchTab = (tab) => {
+    setCurrentTab(tab);
+  };
+
+  const showPasswordCall = (which) => {
+    if (which === "Login") setShowPasswordLogin(showPasswordLogin ^ 1);
+    else setShowPasswordSignUp(showPasswordSignUp ^ 1);
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.image}></View>
-      <View style={styles.content}></View>
-      <View
-        style={[
-          styles.loginContainer,
-          { top: height * 0.3, left: width * 0.075 },
-        ]}
-      >
-        <View style={styles.loginRow}>
-          <Text style={styles.loginText}>LOGIN</Text>
+      <View style={styles.upperSphere}></View>
+      <View style={styles.lowerSphere}></View>
+      <View style={[styles.card, { top: height * 0.3, left: width * 0.075 }]}>
+        <View style={styles.header}>
+          <Pressable onPress={() => switchTab(0)}>
+            <Text
+              style={
+                currentTab === 0 ? styles.currentTabText : styles.nextTabText
+              }
+            >
+              LOGIN
+            </Text>
+          </Pressable>
           <Text style={{ flex: 8 }}></Text>
-          <Text style={styles.signUpText}>SIGN UP</Text>
+          <Pressable onPress={() => switchTab(1)}>
+            <Text
+              style={
+                currentTab === 1 ? styles.currentTabText : styles.nextTabText
+              }
+            >
+              SIGN UP
+            </Text>
+          </Pressable>
         </View>
-        <AppTextField
-          iconName="user"
-          setValue={setEmail}
-          value={email}
-          placeholder="Email"
-          style={{
-            marginVertical: 10,
-          }}
-        />
-        <AppTextField
-          type="password"
-          iconName="lock"
-          setValue={setPassword}
-          value={password}
-          placeholder="Password"
-          style={{
-            marginVertical: 10,
-          }}
-        />
-        <Text style={styles.forgetPass}>Forgot Password?</Text>
-        <AppButton
-          style={{
-            height: "12.5%",
-            borderRadius: 2,
-            marginVertical: 20,
-          }}
-          title="Login"
-          onPress={() => {
-            if (email.trim() === "") {
-              ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
-              return;
-            }
-            if (password.trim() === "") {
-              ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
-              return;
-            }
-            console.log(email);
-            let ourUser = {};
-            // users.forEach((user) => {
-            //   console.log(user);
-            //   // if (user.email === email) ourUser = user;
-            // });
+        {currentTab === 0 ? (
+          <View style={[styles.loginContainer]}>
+            <AppTextField
+              iconName="user"
+              setValue={setLoginEmail}
+              value={loginEmail}
+              placeholder="Email"
+              style={{
+                marginVertical: 10,
+              }}
+            />
+            <AppTextField
+              type={showPasswordLogin === 0 ? "password" : "text"}
+              iconName={showPasswordLogin === 0 ? "lock" : "unlock"}
+              setValue={setLoginPassword}
+              value={loginPassword}
+              placeholder="Password"
+              style={{
+                marginVertical: 10,
+              }}
+              onPressIcon={() => showPasswordCall("Login")}
+            />
+            <Text style={styles.forgetPass}>Forgot Password?</Text>
+            <AppButton
+              style={styles.loginButton}
+              title="Login"
+              onPress={() => {
+                if (loginEmail.trim() === "") {
+                  ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
+                  return;
+                }
+                if (loginPassword.trim() === "") {
+                  ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
+                  return;
+                }
 
-            console.log(users);
-          }}
-        ></AppButton>
+                let ourUser = { name: "" };
+                users.forEach((user) => {
+                  if (user.email.toLowerCase() === loginEmail) ourUser = user;
+                });
+                if (ourUser.name === "")
+                  ToastAndroid.show("Invalid Credenials", ToastAndroid.SHORT);
+                else {
+                  setLoginEmail("");
+                  setLoginPassword("");
+                  navigation.navigate("HomePage", ourUser);
+                }
+              }}
+            ></AppButton>
+          </View>
+        ) : (
+          <View style={styles.loginContainer}>
+            <AppTextField
+              iconName="user"
+              setValue={setSignUpEmail}
+              value={signUpEmail}
+              placeholder="Email"
+              style={{
+                marginVertical: 10,
+              }}
+            />
+            <AppTextField
+              type={showPasswordSignUp === 0 ? "password" : "text"}
+              iconName={showPasswordSignUp === 0 ? "lock" : "unlock"}
+              setValue={setSignUpPassword}
+              value={signUpPassword}
+              placeholder="Password"
+              style={{
+                marginVertical: 10,
+              }}
+              onPressIcon={() => showPasswordCall("SignUp")}
+            />
+            <AppTextField
+              iconName="check-circle-o"
+              setValue={setSignUpOTP}
+              value={signUpOTP}
+              placeholder="OTP"
+              style={{
+                marginVertical: 10,
+              }}
+            />
+            <AppButton
+              style={styles.loginButton}
+              title="Register"
+              onPress={() => {
+                if (loginEmail.trim() === "") {
+                  ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
+                  return;
+                }
+                if (loginPassword.trim() === "") {
+                  ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
+                  return;
+                }
+
+                let ourUser = { name: "" };
+                users.forEach((user) => {
+                  if (user.email === loginEmail) ourUser = user;
+                });
+                if (ourUser.name === "")
+                  ToastAndroid.show("Invalid Credenials", ToastAndroid.SHORT);
+                else {
+                  setLoginEmail("");
+                  setLoginPassword("");
+                  navigation.navigate("HomePage", ourUser);
+                }
+              }}
+            ></AppButton>
+          </View>
+        )}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "space-between",
-  },
-  content: {
-    flex: 0.3,
-    backgroundColor: colors.secondary,
-    borderTopLeftRadius: 200,
-  },
-  forgetPass: {
-    marginVertical: 20,
-    color: colors.grey,
-    fontWeight: 500,
-  },
-  image: {
-    flex: 0.3,
-    backgroundColor: colors.primary,
-    borderBottomEndRadius: 200,
-  },
-  loginContainer: {
+  card: {
     flexDirection: "column",
     position: "absolute",
     width: "85%",
@@ -124,19 +193,44 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     alignItems: "center",
   },
-  loginRow: {
+  container: {
+    flex: 1,
+    justifyContent: "space-between",
+  },
+  currentTabText: {
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  forgetPass: {
+    marginVertical: 20,
+    color: colors.grey,
+    fontWeight: 500,
+  },
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 30,
   },
-  loginText: {
-    fontSize: 24,
-    fontWeight: "bold",
+  lowerSphere: {
+    flex: 0.3,
+    backgroundColor: colors.secondary,
+    borderTopLeftRadius: 200,
   },
-  signUpText: {
+  loginContainer: { width: "100%", alignItems: "center" },
+  loginButton: {
+    height: "12.5%",
+    borderRadius: 3,
+    marginVertical: 20,
+  },
+  nextTabText: {
     fontSize: 18,
     fontWeight: 500,
     color: colors.grey,
+  },
+  upperSphere: {
+    flex: 0.3,
+    backgroundColor: colors.primary,
+    borderBottomEndRadius: 200,
   },
 });

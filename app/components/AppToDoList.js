@@ -4,7 +4,12 @@ import { Entypo } from "@expo/vector-icons";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 import colors from "../config/colors";
 
-export default function AppToDoList({ data, onPressCheckBox, onPressCross }) {
+export default function AppToDoList({
+  data,
+  onPressCheckBox,
+  onPressCross,
+  onPressContent,
+}) {
   let textStyle = data.completed
     ? {
         textDecorationLine: "line-through",
@@ -19,7 +24,9 @@ export default function AppToDoList({ data, onPressCheckBox, onPressCross }) {
         style={styles.button}
         isChecked={data.completed}
       />
-      <Text style={[styles.text, textStyle]}>{data.title}</Text>
+      <Text onPress={onPressContent} style={[styles.text, textStyle]}>
+        {data.title}
+      </Text>
       <View>
         <Entypo
           onPress={onPressCross}

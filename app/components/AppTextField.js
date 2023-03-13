@@ -10,11 +10,10 @@ function AppTextField({
   value,
   style,
   type = "text",
+  onPressIcon,
 }) {
   const [backgroundcolor, setBG] = useState(colors.lightGray);
   const elevation = backgroundcolor === colors.lightGray ? 0 : 10;
-
-  // const [emailText, setEmailText] = useState("");
 
   return (
     <View
@@ -30,7 +29,12 @@ function AppTextField({
         style,
       ]}
     >
-      <FontAwesome name={iconName} color={colors.black} size={24} />
+      <FontAwesome
+        onPress={onPressIcon}
+        name={iconName}
+        color={colors.black}
+        size={24}
+      />
       <TextInput
         secureTextEntry={type === "password" ? true : false}
         style={{
