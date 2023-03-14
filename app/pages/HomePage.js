@@ -1,5 +1,5 @@
 // Default or Third Party Library Imports
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Platform,
   StyleSheet,
@@ -12,8 +12,10 @@ import {
   Text,
   Keyboard,
   useWindowDimensions,
+  PanResponder,
+  Animated,
 } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome, AntDesign } from "@expo/vector-icons";
 
 // Custom Imports
 import colors from "../config/colors";
@@ -116,6 +118,7 @@ export default function HomePage({ route, navigation }) {
     ];
     settaskInputController("");
     setTodos(newTodos);
+    setTodosForSearch(newTodos);
     setSearching(!searching);
   };
 
@@ -165,6 +168,20 @@ export default function HomePage({ route, navigation }) {
     setTodos(search(todosForSearch, newText));
   };
 
+  // Draggable View
+  // const bottomAnim = useState(new Animated.Value(0.3)).current;
+
+  // const showBottomNav = (value) => {
+  //   console.log("Animated");
+  //   Animated.timing(bottomAnim, {
+  //     toValue: 0.96,
+  //     duration: 1000,
+  //     useNativeDriver: false,
+  //   }).start(({ finished }) => {
+  //     console.log("finished");
+  //   });
+  // };
+  // console.log(todos[0]);
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -188,13 +205,10 @@ export default function HomePage({ route, navigation }) {
                 value={taskSearch}
                 placeholder={"Search..."}
                 placeholderTextColor={"#FFFFF0"}
-                onEndEditing={() => {
-                  setTodos(todosForSearch);
-                }}
               />
               <AppIcon
                 name="user"
-                size={keyboardStatus ? 40 : 50}
+                size={50}
                 iconColor={colors.primary}
                 backgroundColor={colors.white}
                 onPress={onPressProfileIcon}
@@ -204,7 +218,6 @@ export default function HomePage({ route, navigation }) {
             <View style={styles.viewHeader}>
               <TextInput
                 multiline={true}
-                autoFocus={true}
                 style={styles.addBar}
                 onChangeText={settaskInputController}
                 value={taskInputController}
@@ -304,6 +317,12 @@ export default function HomePage({ route, navigation }) {
                   </Text>
                 </View>
               </View>
+
+              <AppButton
+                onPress={navigation.goBack}
+                style={[styles.closeModalBtn, { width: "30%", marginTop: 20 }]}
+                title="Log Out"
+              />
             </View>
           </View>
         </Modal>
@@ -337,29 +356,85 @@ export default function HomePage({ route, navigation }) {
             </View>
           </View>
         </Modal>
-        <FlatList
-          refreshing={fetching}
-          onRefresh={() => {
-            setFetching(false);
-            setTodos([...todos]);
-            setFetching(false);
-          }}
-          style={styles.list}
-          data={todos}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            return (
-              <AppToDoList
-                key={item.id}
-                onPressCheckBox={() => markCompletedOnToDo(item)}
-                onPressContent={() => showDetailedView(item)}
-                onPressCross={() => deletetodo(item)}
-                data={item}
-              />
-            );
+        {todos.length !== 0 ? (
+          <FlatList
+            refreshing={fetching}
+            onRefresh={() => {
+              setFetching(false);
+              setTodos([...todos]);
+              setFetching(false);
+            }}
+            style={styles.list}
+            data={todos}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => {
+              return (
+                <AppToDoList
+                  key={item.id}
+                  onPressCheckBox={() => markCompletedOnToDo(item)}
+                  onPressContent={() => showDetailedView(item)}
+                  onPressCross={() => deletetodo(item)}
+                  data={item}
+                />
+              );
+            }}
+          />
+        ) : (
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ fontSize: 20 }}>
+              {!fetching ? "No Todos Match" : "Loading..."}
+            </Text>
+          </View>
+        )}
+      </View>
+      {/* <Animated.View
+        style={[
+          {
+            position: "absolute",
+            width: "100%",
+            height: height * 0.75,
+            borderTopStartRadius: 50,
+            borderTopEndRadius: 50,
+            backgroundColor: colors.secondary,
+            alignItems: "center",
+            overflow: "hidden",
+          },
+          {
+            top: height * bottomAnim._value,
+          },
+        ]}
+      >
+        <View
+          style={{
+            backgroundColor: colors.white,
+            height: 4,
+            width: 30,
+            borderRadius: 20,
+            marginVertical: 8,
           }}
         />
-      </View>
+        <Pressable onPress={() => showBottomNav(0.96)}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <AntDesign name="pluscircle" color={colors.white} size={45} />
+            <Text
+              style={{
+                marginHorizontal: 10,
+                color: colors.white,
+                fontWeight: "600",
+                fontSize: 18,
+              }}
+            >
+              Add New Todo
+            </Text>
+          </View>
+        </Pressable>
+      </Animated.View> */}
       <AppFloatingActionButton
         backgroundColor={colors.primary}
         name={!searching ? "search1" : "plus"}
@@ -454,6 +529,7 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     height: "100%",
+    justifyContent: "flex-end",
   },
   viewHeader: {
     flexDirection: "row",

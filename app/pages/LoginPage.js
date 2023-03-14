@@ -5,6 +5,7 @@ import {
   View,
   StyleSheet,
   ToastAndroid,
+  ScrollView,
 } from "react-native";
 
 import AppTextField from "../components/AppTextField";
@@ -43,142 +44,151 @@ export default function LoginPage({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.upperSphere}></View>
-      <View style={styles.lowerSphere}></View>
-      <View style={[styles.card, { top: height * 0.3, left: width * 0.075 }]}>
-        <View style={styles.header}>
-          <Pressable onPress={() => switchTab(0)}>
-            <Text
-              style={
-                currentTab === 0 ? styles.currentTabText : styles.nextTabText
-              }
-            >
-              LOGIN
-            </Text>
-          </Pressable>
-          <Text style={{ flex: 8 }}></Text>
-          <Pressable onPress={() => switchTab(1)}>
-            <Text
-              style={
-                currentTab === 1 ? styles.currentTabText : styles.nextTabText
-              }
-            >
-              SIGN UP
-            </Text>
-          </Pressable>
+    // <KeyboardAvoidingView
+    //   style={{
+    //     height: "100%",
+    //     backgroundColor: "yellow",
+    //   }}
+    // >
+    <ScrollView style={{ height: "100%" }}>
+      <View style={[styles.container, { height: height * 1.05 }]}>
+        <View style={styles.upperSphere}></View>
+        <View style={styles.lowerSphere}></View>
+        <View style={[styles.card, { top: height * 0.3, left: width * 0.075 }]}>
+          <View style={styles.header}>
+            <Pressable onPress={() => switchTab(0)}>
+              <Text
+                style={
+                  currentTab === 0 ? styles.currentTabText : styles.nextTabText
+                }
+              >
+                LOGIN
+              </Text>
+            </Pressable>
+            <Text style={{ flex: 8 }}></Text>
+            <Pressable onPress={() => switchTab(1)}>
+              <Text
+                style={
+                  currentTab === 1 ? styles.currentTabText : styles.nextTabText
+                }
+              >
+                SIGN UP
+              </Text>
+            </Pressable>
+          </View>
+          {currentTab === 0 ? (
+            <View style={[styles.loginContainer]}>
+              <AppTextField
+                iconName="user"
+                setValue={setLoginEmail}
+                value={loginEmail}
+                placeholder="Email"
+                style={{
+                  marginVertical: 10,
+                }}
+              />
+              <AppTextField
+                type={showPasswordLogin === 0 ? "password" : "text"}
+                iconName={showPasswordLogin === 0 ? "lock" : "unlock"}
+                setValue={setLoginPassword}
+                value={loginPassword}
+                placeholder="Password"
+                style={{
+                  marginVertical: 10,
+                }}
+                onPressIcon={() => showPasswordCall("Login")}
+              />
+              <Text style={styles.forgetPass}>Forgot Password?</Text>
+              <AppButton
+                style={styles.loginButton}
+                title="Login"
+                onPress={() => {
+                  if (loginEmail.trim() === "") {
+                    ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
+                    return;
+                  }
+                  if (loginPassword.trim() === "") {
+                    ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
+                    return;
+                  }
+
+                  let ourUser = { name: "" };
+                  users.forEach((user) => {
+                    if (user.email.toLowerCase() === loginEmail) ourUser = user;
+                  });
+                  if (ourUser.name === "")
+                    ToastAndroid.show("Invalid Credenials", ToastAndroid.SHORT);
+                  else {
+                    setLoginEmail("");
+                    setLoginPassword("");
+                    navigation.navigate("HomePage", ourUser);
+                  }
+                }}
+              ></AppButton>
+            </View>
+          ) : (
+            <View style={styles.loginContainer}>
+              <AppTextField
+                iconName="user"
+                setValue={setSignUpEmail}
+                value={signUpEmail}
+                placeholder="Email"
+                style={{
+                  marginVertical: 10,
+                }}
+              />
+              <AppTextField
+                type={showPasswordSignUp === 0 ? "password" : "text"}
+                iconName={showPasswordSignUp === 0 ? "lock" : "unlock"}
+                setValue={setSignUpPassword}
+                value={signUpPassword}
+                placeholder="Password"
+                style={{
+                  marginVertical: 10,
+                }}
+                onPressIcon={() => showPasswordCall("SignUp")}
+              />
+              <AppTextField
+                iconName="check-circle-o"
+                setValue={setSignUpOTP}
+                value={signUpOTP}
+                placeholder="OTP"
+                style={{
+                  marginVertical: 10,
+                }}
+              />
+              <AppButton
+                style={styles.loginButton}
+                title="Register"
+                onPress={() => {
+                  if (loginEmail.trim() === "") {
+                    ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
+                    return;
+                  }
+                  if (loginPassword.trim() === "") {
+                    ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
+                    return;
+                  }
+
+                  let ourUser = { name: "" };
+                  users.forEach((user) => {
+                    if (user.email === loginEmail) ourUser = user;
+                  });
+                  if (ourUser.name === "")
+                    ToastAndroid.show("Invalid Credenials", ToastAndroid.SHORT);
+                  else {
+                    setLoginEmail("");
+                    setLoginPassword("");
+                    navigation.navigate("HomePage", ourUser);
+                  }
+                }}
+              ></AppButton>
+            </View>
+          )}
         </View>
-        {currentTab === 0 ? (
-          <View style={[styles.loginContainer]}>
-            <AppTextField
-              iconName="user"
-              setValue={setLoginEmail}
-              value={loginEmail}
-              placeholder="Email"
-              style={{
-                marginVertical: 10,
-              }}
-            />
-            <AppTextField
-              type={showPasswordLogin === 0 ? "password" : "text"}
-              iconName={showPasswordLogin === 0 ? "lock" : "unlock"}
-              setValue={setLoginPassword}
-              value={loginPassword}
-              placeholder="Password"
-              style={{
-                marginVertical: 10,
-              }}
-              onPressIcon={() => showPasswordCall("Login")}
-            />
-            <Text style={styles.forgetPass}>Forgot Password?</Text>
-            <AppButton
-              style={styles.loginButton}
-              title="Login"
-              onPress={() => {
-                if (loginEmail.trim() === "") {
-                  ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
-                  return;
-                }
-                if (loginPassword.trim() === "") {
-                  ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
-                  return;
-                }
-
-                let ourUser = { name: "" };
-                users.forEach((user) => {
-                  if (user.email.toLowerCase() === loginEmail) ourUser = user;
-                });
-                if (ourUser.name === "")
-                  ToastAndroid.show("Invalid Credenials", ToastAndroid.SHORT);
-                else {
-                  setLoginEmail("");
-                  setLoginPassword("");
-                  navigation.navigate("HomePage", ourUser);
-                }
-              }}
-            ></AppButton>
-          </View>
-        ) : (
-          <View style={styles.loginContainer}>
-            <AppTextField
-              iconName="user"
-              setValue={setSignUpEmail}
-              value={signUpEmail}
-              placeholder="Email"
-              style={{
-                marginVertical: 10,
-              }}
-            />
-            <AppTextField
-              type={showPasswordSignUp === 0 ? "password" : "text"}
-              iconName={showPasswordSignUp === 0 ? "lock" : "unlock"}
-              setValue={setSignUpPassword}
-              value={signUpPassword}
-              placeholder="Password"
-              style={{
-                marginVertical: 10,
-              }}
-              onPressIcon={() => showPasswordCall("SignUp")}
-            />
-            <AppTextField
-              iconName="check-circle-o"
-              setValue={setSignUpOTP}
-              value={signUpOTP}
-              placeholder="OTP"
-              style={{
-                marginVertical: 10,
-              }}
-            />
-            <AppButton
-              style={styles.loginButton}
-              title="Register"
-              onPress={() => {
-                if (loginEmail.trim() === "") {
-                  ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
-                  return;
-                }
-                if (loginPassword.trim() === "") {
-                  ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
-                  return;
-                }
-
-                let ourUser = { name: "" };
-                users.forEach((user) => {
-                  if (user.email === loginEmail) ourUser = user;
-                });
-                if (ourUser.name === "")
-                  ToastAndroid.show("Invalid Credenials", ToastAndroid.SHORT);
-                else {
-                  setLoginEmail("");
-                  setLoginPassword("");
-                  navigation.navigate("HomePage", ourUser);
-                }
-              }}
-            ></AppButton>
-          </View>
-        )}
       </View>
-    </View>
+    </ScrollView>
+    // </KeyboardAvoidingView>
   );
 }
 
@@ -192,9 +202,10 @@ const styles = StyleSheet.create({
     padding: 24,
     backgroundColor: colors.white,
     alignItems: "center",
+    borderRadius: 8,
   },
   container: {
-    flex: 1,
+    width: "100%",
     justifyContent: "space-between",
   },
   currentTabText: {
@@ -213,7 +224,8 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   lowerSphere: {
-    flex: 0.3,
+    width: "100%",
+    height: 250,
     backgroundColor: colors.secondary,
     borderTopLeftRadius: 200,
   },
@@ -229,7 +241,8 @@ const styles = StyleSheet.create({
     color: colors.grey,
   },
   upperSphere: {
-    flex: 0.3,
+    width: "100%",
+    height: 250,
     backgroundColor: colors.primary,
     borderBottomEndRadius: 200,
   },
