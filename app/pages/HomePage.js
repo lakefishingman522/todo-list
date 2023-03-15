@@ -1,5 +1,5 @@
 // Default or Third Party Library Imports
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Platform,
   StyleSheet,
@@ -7,15 +7,13 @@ import {
   StatusBar,
   TextInput,
   FlatList,
-  KeyboardAvoidingView,
   Modal,
   Text,
   Keyboard,
   useWindowDimensions,
-  PanResponder,
-  Animated,
 } from "react-native";
 import { FontAwesome, AntDesign } from "@expo/vector-icons";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Custom Imports
 import colors from "../config/colors";
@@ -26,6 +24,8 @@ import AppFloatingActionButton from "../components/AppFloatingActionButton";
 import AppIcon from "../components/AppIcon";
 import AppButton from "../components/AppButton";
 import search from "../config/search";
+import AppSliderBottomNavBar from "../components/AppSliderBottomNavBar";
+import AppRow from "../components/AppRow";
 
 //Custom Hook
 function useTodos(todos) {
@@ -57,6 +57,8 @@ export default function HomePage({ route, navigation }) {
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [todoObject, setTodoObject] = useState({});
   const [keyboardStatus, setKeyboardStatus] = useState(0);
+  const isSearchOnFocus = useRef();
+  const isAddOnFocus = useRef();
 
   //Get Todos
   useEffect(() => {
@@ -96,6 +98,19 @@ export default function HomePage({ route, navigation }) {
       hideSubscription.remove();
     };
   }, []);
+
+  // useEffect(() => {
+  //   if (!keyboardStatus) {
+  //     if (!searching) isAddOnFocus.current.blur();
+  //     else isSearchOnFocus.current.blur();
+  //   }
+  // }, [keyboardStatus]);
+
+  useEffect(() => {
+    if (!searching) {
+      isAddOnFocus.current.focus();
+    }
+  }, [searching]);
 
   //Handlers
   onPressProfileIcon = () => {
@@ -168,25 +183,8 @@ export default function HomePage({ route, navigation }) {
     setTodos(search(todosForSearch, newText));
   };
 
-  // Draggable View
-  // const bottomAnim = useState(new Animated.Value(0.3)).current;
-
-  // const showBottomNav = (value) => {
-  //   console.log("Animated");
-  //   Animated.timing(bottomAnim, {
-  //     toValue: 0.96,
-  //     duration: 1000,
-  //     useNativeDriver: false,
-  //   }).start(({ finished }) => {
-  //     console.log("finished");
-  //   });
-  // };
-  // console.log(todos[0]);
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
+    <GestureHandlerRootView style={styles.container}>
       <View style={styles.toDoContainer}>
         <AppBar
           size={30}
@@ -206,6 +204,11 @@ export default function HomePage({ route, navigation }) {
                 placeholder={"Search..."}
                 placeholderTextColor={"#FFFFF0"}
               />
+              {keyboardStatus ? (
+                <AntDesign name="close" color={colors.white} size={20} />
+              ) : (
+                <View style={{ width: 20 }} />
+              )}
               <AppIcon
                 name="user"
                 size={50}
@@ -217,6 +220,7 @@ export default function HomePage({ route, navigation }) {
           ) : (
             <View style={styles.viewHeader}>
               <TextInput
+                ref={isAddOnFocus}
                 multiline={true}
                 style={styles.addBar}
                 onChangeText={settaskInputController}
@@ -224,6 +228,11 @@ export default function HomePage({ route, navigation }) {
                 placeholder={"What do you want to do?"}
                 placeholderTextColor={"#FAF9F6"}
               />
+              {keyboardStatus ? (
+                <AntDesign name="close" color={colors.white} size={20} />
+              ) : (
+                <View style={{ width: 20 }} />
+              )}
               <AppIcon
                 name="check"
                 size={65}
@@ -253,12 +262,7 @@ export default function HomePage({ route, navigation }) {
                 },
               ]}
             >
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
+              <AppRow justifyContent="space-between">
                 <Text
                   style={[
                     styles.modalText,
@@ -273,19 +277,14 @@ export default function HomePage({ route, navigation }) {
                   size={25}
                   color={colors.black}
                 />
-              </View>
+              </AppRow>
 
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
+              <AppRow justifyContent="space-between">
                 <Text style={{ fontSize: 15, fontWeight: 600 }}>Completed</Text>
                 <Text style={{ fontSize: 15, fontWeight: 600 }}>Pending</Text>
-              </View>
+              </AppRow>
 
-              <View style={{ flexDirection: "row" }}>
+              <AppRow>
                 <View
                   style={{
                     flex: completed / total,
@@ -316,7 +315,7 @@ export default function HomePage({ route, navigation }) {
                     {pending}
                   </Text>
                 </View>
-              </View>
+              </AppRow>
 
               <AppButton
                 onPress={navigation.goBack}
@@ -393,33 +392,22 @@ export default function HomePage({ route, navigation }) {
           </View>
         )}
       </View>
-      {/* <Animated.View
-        style={[
-          {
-            position: "absolute",
-            width: "100%",
-            height: height * 0.75,
-            borderTopStartRadius: 50,
-            borderTopEndRadius: 50,
-            backgroundColor: colors.secondary,
-            alignItems: "center",
-            overflow: "hidden",
-          },
-          {
-            top: height * bottomAnim._value,
-          },
-        ]}
-      >
+      <AppSliderBottomNavBar>
         <View
           style={{
-            backgroundColor: colors.white,
-            height: 4,
-            width: 30,
-            borderRadius: 20,
-            marginVertical: 8,
+            alignItems: "center",
+            overflow: "hidden",
           }}
-        />
-        <Pressable onPress={() => showBottomNav(0.96)}>
+        >
+          <View
+            style={{
+              backgroundColor: colors.white,
+              height: 4,
+              width: 30,
+              borderRadius: 20,
+              marginVertical: 8,
+            }}
+          />
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <AntDesign name="pluscircle" color={colors.white} size={45} />
             <Text
@@ -433,15 +421,16 @@ export default function HomePage({ route, navigation }) {
               Add New Todo
             </Text>
           </View>
-        </Pressable>
-      </Animated.View> */}
+        </View>
+      </AppSliderBottomNavBar>
+
       <AppFloatingActionButton
         backgroundColor={colors.primary}
         name={!searching ? "search1" : "plus"}
         size={65}
         onPress={toggleFAB}
       />
-    </KeyboardAvoidingView>
+    </GestureHandlerRootView>
   );
 }
 
@@ -533,7 +522,7 @@ const styles = StyleSheet.create({
   },
   viewHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
     alignItems: "center",
   },
 });
