@@ -1,5 +1,5 @@
 // Default or Third Party Library Imports
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Platform,
   StyleSheet,
@@ -11,21 +11,37 @@ import {
   Text,
   Keyboard,
   useWindowDimensions,
+  Pressable,
+  ToastAndroid,
 } from "react-native";
 import { FontAwesome, AntDesign } from "@expo/vector-icons";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import {
+  GestureHandlerRootView,
+  PanGestureHandler,
+} from "react-native-gesture-handler";
+import Animated, {
+  useSharedValue,
+  withSpring,
+  useAnimatedGestureHandler,
+  runOnJS,
+  withTiming,
+  Easing,
+  useAnimatedStyle,
+} from "react-native-reanimated";
+import "react-native-reanimated";
 
 // Custom Imports
 import colors from "../config/colors";
 import axios from "axios";
 import AppToDoList from "../components/AppToDoList";
 import AppBar from "../components/AppBar";
-import AppFloatingActionButton from "../components/AppFloatingActionButton";
 import AppIcon from "../components/AppIcon";
 import AppButton from "../components/AppButton";
 import search from "../config/search";
 import AppSliderBottomNavBar from "../components/AppSliderBottomNavBar";
 import AppRow from "../components/AppRow";
+import AppChip from "../components/AppChip";
+import { Calendar } from "react-native-calendars";
 
 //Custom Hook
 function useTodos(todos) {
@@ -52,13 +68,19 @@ export default function HomePage({ route, navigation }) {
   const [todosForSearch, setTodosForSearch] = useState([]);
   let [total, completed, pending] = useTodos(todos);
   const [fetching, setFetching] = useState(true);
-  const [searching, setSearching] = useState(true);
-  const [toDoModalVisible, setToDoModalVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [todoObject, setTodoObject] = useState({});
   const [keyboardStatus, setKeyboardStatus] = useState(0);
-  const isSearchOnFocus = useRef();
   const isAddOnFocus = useRef();
+  const [bottomNavVisible, setBottomNavVisible] = useState(false);
+  const [todoCategories, setTodoCategories] = useState([
+    { id: 1, title: "Meeting", selected: false },
+    { id: 2, title: "Review", selected: false },
+    { id: 3, title: "Marketing", selected: false },
+    { id: 4, title: "Design Project", selected: false },
+  ]);
+  const [editTodo, setEditTodo] = useState({});
+  const [chipTextController, setChipTextController] = useState("");
 
   //Get Todos
   useEffect(() => {
@@ -99,31 +121,25 @@ export default function HomePage({ route, navigation }) {
     };
   }, []);
 
-  // useEffect(() => {
-  //   if (!keyboardStatus) {
-  //     if (!searching) isAddOnFocus.current.blur();
-  //     else isSearchOnFocus.current.blur();
-  //   }
-  // }, [keyboardStatus]);
-
+  //Listener For Bottom Nav Bar
   useEffect(() => {
-    if (!searching) {
+    if (bottomNavVisible) {
       isAddOnFocus.current.focus();
-    }
-  }, [searching]);
+    } else isAddOnFocus.current.blur();
+  }, [bottomNavVisible]);
 
   //Handlers
-  onPressProfileIcon = () => {
+  const onPressProfileIcon = () => {
     [total, completed, pending] = useTodos(todos);
     setProfileModalVisible(true);
   };
 
-  addTodo = () => {
-    Keyboard.dismiss();
+  const addTodo = () => {
     if (taskInputController.trim() === "") return;
+    translateY.value = withTiming(0);
     let newTodos = [
       {
-        userId: 1,
+        userId: route.params.id,
         id: todos.length + 1,
         title: taskInputController.trim(),
         completed: false,
@@ -131,22 +147,20 @@ export default function HomePage({ route, navigation }) {
       },
       ...todos,
     ];
+
     settaskInputController("");
     setTodos(newTodos);
     setTodosForSearch(newTodos);
-    setSearching(!searching);
+    setBottomNavVisible(false);
   };
 
-  closeDetailedView = () => setToDoModalVisible(false);
+  const closeDetailedView = () => setTodoObject({});
 
-  closeProfileView = () => setProfileModalVisible(false);
+  const closeProfileView = () => setProfileModalVisible(false);
 
-  showDetailedView = (item) => {
-    setToDoModalVisible(true);
-    setTodoObject(item);
-  };
+  const showDetailedView = (item) => setTodoObject(item);
 
-  deletetodo = (item) => {
+  const deletetodo = (item) => {
     let newTodos = todos.filter((todo) => {
       if (todo.id != item.id) return todo;
     });
@@ -154,7 +168,7 @@ export default function HomePage({ route, navigation }) {
     setTodos(newTodos);
   };
 
-  markCompletedOnToDo = (item) => {
+  const markCompletedOnToDo = (item) => {
     let newTodos = todos.filter((todo) => {
       if (todo.id == item.id) todo.completed = !todo.completed;
 
@@ -164,83 +178,129 @@ export default function HomePage({ route, navigation }) {
     setTodos(newTodos);
   };
 
-  toggleFAB = () => {
-    setSearching(!searching);
+  const modelReqClose = () => setTodoObject({});
+
+  const profileModelReqClose = () => setToDoModalVisible(!profileModalVisible);
+
+  const chipModelReqClose = () => {
+    if (editTodo.title.trim() === "") {
+      ToastAndroid.show("-Enter Chip Name", ToastAndroid.SHORT);
+      return;
+    }
+    setEditTodo({});
   };
 
-  modelReqClose = () => {
-    Alert.alert("Modal has been closed.");
-    setToDoModalVisible(!toDoModalVisible);
-  };
-
-  profileModelReqClose = () => {
-    Alert.alert("Modal has been closed.");
-    setToDoModalVisible(!profileModalVisible);
-  };
-
-  searchTodo = (newText) => {
+  const searchTodo = (newText) => {
     settaskSearch(newText);
     setTodos(search(todosForSearch, newText));
   };
 
+  const editChipOnLongPress = (id) =>
+    setEditTodo({ ...todoCategories[id - 1] });
+
+  const saveChipChange = (newTitle) => {
+    if (newTitle.trim() === "") {
+      ToastAndroid.show("_Enter Chip Name", ToastAndroid.SHORT);
+      return;
+    }
+    todoCategories[editTodo.id - 1].title = editTodo.title = newTitle.trim();
+    setTodoCategories([...todoCategories]);
+    setChipTextController("");
+    chipModelReqClose();
+  };
+
+  const selectChip = (id) => {
+    todoCategories[id - 1].selected = !todoCategories[id - 1].selected;
+    setTodoCategories([...todoCategories]);
+  };
+
+  const createNewChip = () => {
+    let newTodo = {
+      id: todoCategories.length + 1,
+      title: "",
+      selected: true,
+    };
+    setTodoCategories([...todoCategories, newTodo]);
+    setEditTodo({ ...newTodo });
+  };
+
+  //Bottom NavBar Gesture
+  const translateY = useSharedValue(0);
+  const panGestureEvent = useAnimatedGestureHandler({
+    onStart: (event, context) => {
+      context.startY = translateY.value;
+    },
+    onActive: (event, context) => {
+      if (height * 0.675 >= (event.translationY + context.startY) * -1)
+        translateY.value = event.translationY + context.startY;
+    },
+    onEnd: () => {
+      let h = (height * 0.8) / 2;
+      if (h <= translateY.value * -1) {
+        translateY.value = withSpring(height * -0.675);
+        runOnJS(setBottomNavVisible)(true);
+      } else {
+        translateY.value = withSpring(0);
+        runOnJS(setBottomNavVisible)(false);
+        runOnJS(settaskInputController)("");
+      }
+    },
+  });
+
+  const translateX = useSharedValue(0);
+  const panGestureEventChips = useAnimatedGestureHandler({
+    onStart: (event, context) => {
+      context.startX = translateX.value;
+    },
+    onActive: (event, context) => {
+      if (event.translationX + context.startX > 0)
+        translateX.value = event.translationX + context.startX;
+    },
+    onEnd: () => {
+      console.log(translateX.value);
+      // translateX.value = withSpring(0);
+    },
+  });
+  const animatedStyleChips = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: translateX.value }],
+    };
+  });
+
   return (
     <GestureHandlerRootView style={styles.container}>
       <View style={styles.toDoContainer}>
+        <Text style={{}}></Text>
         <AppBar
           size={30}
-          name={searching ? "search1" : "plus"}
+          name={"search1"}
           iconColor="white"
           barStyle={[
             styles.appBarStyle,
             keyboardStatus ? { height: "11.8%" } : {},
           ]}
         >
-          {searching ? (
-            <View style={styles.viewHeader}>
-              <TextInput
-                style={styles.searchBar}
-                onChangeText={(newText) => searchTodo(newText)}
-                value={taskSearch}
-                placeholder={"Search..."}
-                placeholderTextColor={"#FFFFF0"}
-              />
-              {keyboardStatus ? (
-                <AntDesign name="close" color={colors.white} size={20} />
-              ) : (
-                <View style={{ width: 20 }} />
-              )}
-              <AppIcon
-                name="user"
-                size={50}
-                iconColor={colors.primary}
-                backgroundColor={colors.white}
-                onPress={onPressProfileIcon}
-              />
-            </View>
-          ) : (
-            <View style={styles.viewHeader}>
-              <TextInput
-                ref={isAddOnFocus}
-                multiline={true}
-                style={styles.addBar}
-                onChangeText={settaskInputController}
-                value={taskInputController}
-                placeholder={"What do you want to do?"}
-                placeholderTextColor={"#FAF9F6"}
-              />
-              {keyboardStatus ? (
-                <AntDesign name="close" color={colors.white} size={20} />
-              ) : (
-                <View style={{ width: 20 }} />
-              )}
-              <AppIcon
-                name="check"
-                size={65}
-                backgroundColor={colors.primary}
-                onPress={addTodo}
-              />
-            </View>
-          )}
+          <View style={styles.viewHeader}>
+            <TextInput
+              style={styles.searchBar}
+              onChangeText={(newText) => searchTodo(newText)}
+              value={taskSearch}
+              placeholder={"Search..."}
+              placeholderTextColor={"#FFFFF0"}
+            />
+            {keyboardStatus ? (
+              <AntDesign name="close" color={colors.white} size={20} />
+            ) : (
+              <View style={{ width: 20 }} />
+            )}
+            <AppIcon
+              name="user"
+              size={50}
+              iconColor={colors.primary}
+              backgroundColor={colors.white}
+              onPress={onPressProfileIcon}
+            />
+          </View>
         </AppBar>
         <Modal
           animationType="fade"
@@ -328,7 +388,7 @@ export default function HomePage({ route, navigation }) {
         <Modal
           animationType="slide"
           transparent={true}
-          visible={toDoModalVisible}
+          visible={JSON.stringify(todoObject) !== "{}"}
           onRequestClose={modelReqClose}
         >
           <View style={styles.centeredView}>
@@ -392,44 +452,197 @@ export default function HomePage({ route, navigation }) {
           </View>
         )}
       </View>
-      <AppSliderBottomNavBar>
+      <AppSliderBottomNavBar
+        translateY={translateY}
+        panGestureEvent={panGestureEvent}
+      >
         <View
           style={{
-            alignItems: "center",
+            width: "100%",
+            height: "100%",
+            alignItems: "flex-end",
+            // justifyContent: "space-between",
             overflow: "hidden",
           }}
         >
-          <View
-            style={{
-              backgroundColor: colors.white,
-              height: 4,
-              width: 30,
-              borderRadius: 20,
-              marginVertical: 8,
-            }}
-          />
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <AntDesign name="pluscircle" color={colors.white} size={45} />
-            <Text
+          <View style={{ alignItems: "center", width: "100%" }}>
+            <View
               style={{
-                marginHorizontal: 10,
-                color: colors.white,
-                fontWeight: "600",
-                fontSize: 18,
+                backgroundColor: colors.white,
+                height: 4,
+                width: 30,
+                borderRadius: 20,
+                marginVertical: 8,
+              }}
+            />
+            {!bottomNavVisible ? (
+              <Pressable
+                onPress={() => {
+                  translateY.value = withTiming(height * -0.675, {
+                    duration: 500,
+                    easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+                  });
+                  setBottomNavVisible(true);
+                }}
+              >
+                <AppRow alignItems="center">
+                  <AntDesign name="pluscircle" color={colors.white} size={45} />
+                  <Text
+                    style={{
+                      marginHorizontal: 10,
+                      color: colors.white,
+                      fontWeight: "600",
+                      fontSize: 18,
+                    }}
+                  >
+                    Add New Todo
+                  </Text>
+                </AppRow>
+              </Pressable>
+            ) : (
+              <View style={{ height: 30 }} />
+            )}
+            <TextInput
+              ref={isAddOnFocus}
+              style={styles.addBar}
+              onChangeText={settaskInputController}
+              value={taskInputController}
+              placeholder={"What do you want to do?"}
+              placeholderTextColor={"rgba(255, 255, 255, 0.3)"}
+            />
+
+            <PanGestureHandler onGestureEvent={panGestureEventChips}>
+              <Animated.View
+                style={[
+                  {
+                    justifyContent: "flex-start",
+                    flexDirection: "row",
+                    width: width * 2,
+                    marginHorizontal: 18,
+                    rowGap: 12.5,
+                    columnGap: 15,
+                    flexWrap: "wrap",
+                    marginTop: 30,
+                  },
+                  animatedStyleChips,
+                ]}
+              >
+                {todoCategories.map((category) => (
+                  <Pressable
+                    key={category.id}
+                    onPress={() => selectChip(category.id)}
+                    onLongPress={() => editChipOnLongPress(category.id)}
+                  >
+                    <AppChip data={category} />
+                  </Pressable>
+                ))}
+                <AppIcon
+                  name="plus"
+                  size={42}
+                  iconColor={colors.black}
+                  backgroundColor={colors.white}
+                  style={{ borderRadius: 5 }}
+                  onPress={createNewChip}
+                />
+              </Animated.View>
+            </PanGestureHandler>
+            <View
+              style={{
+                marginHorizontal: 20,
+                marginVertical: 20,
+                backgroundColor: "red",
               }}
             >
-              Add New Todo
-            </Text>
+              <Calendar />
+            </View>
+            <View
+              style={{
+                borderWidth: 0.3,
+                width: "100%",
+                borderColor: "rgba(255, 255, 255, 0.5)",
+                marginVertical: 40,
+              }}
+            />
           </View>
+          <AppRow>
+            <AppButton
+              style={{
+                width: 80,
+                padding: 10,
+                borderRadius: 10,
+                marginVertical: 40,
+                marginHorizontal: 10,
+              }}
+              title="Cancel"
+              onPress={() => {
+                translateY.value = withTiming(0);
+                setBottomNavVisible(false);
+              }}
+            />
+            <AppButton
+              style={{
+                width: 80,
+                padding: 10,
+                borderRadius: 10,
+                marginVertical: 40,
+                marginHorizontal: 10,
+              }}
+              title="Save"
+              onPress={addTodo}
+            />
+          </AppRow>
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={JSON.stringify(editTodo) !== "{}"}
+            onRequestClose={chipModelReqClose}
+          >
+            <View style={styles.centeredView}>
+              <View style={styles.modalView}>
+                <React.Fragment>
+                  <Text style={{ fontWeight: 700 }}>
+                    {editTodo.title !== "" ? "Edit Chip" : "Add Chip"}
+                  </Text>
+                  <TextInput
+                    placeholder={editTodo.title}
+                    autoFocus={true}
+                    style={{
+                      marginBottom: 20,
+                      marginTop: 10,
+                      borderWidth: 1,
+                      padding: 10,
+                      borderRadius: 10,
+                    }}
+                    onChangeText={(newText) => setChipTextController(newText)}
+                  />
+                  <AppRow alignSelf="flex-end">
+                    <AppButton
+                      onPress={chipModelReqClose}
+                      style={{
+                        width: 60,
+                        height: 30,
+                        marginVertical: 10,
+                        marginLeft: 100,
+                      }}
+                      title="Close"
+                    />
+                    <AppButton
+                      onPress={() => saveChipChange(chipTextController)}
+                      style={{
+                        width: 60,
+                        height: 30,
+                        marginVertical: 10,
+                        marginLeft: 10,
+                      }}
+                      title="Save"
+                    />
+                  </AppRow>
+                </React.Fragment>
+              </View>
+            </View>
+          </Modal>
         </View>
       </AppSliderBottomNavBar>
-
-      <AppFloatingActionButton
-        backgroundColor={colors.primary}
-        name={!searching ? "search1" : "plus"}
-        size={65}
-        onPress={toggleFAB}
-      />
     </GestureHandlerRootView>
   );
 }
@@ -455,7 +668,12 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     overflow: "hidden",
   },
-  addBar: { color: colors.white, flex: 0.8 },
+  addBar: {
+    color: colors.white,
+    marginHorizontal: 20,
+    fontSize: 25,
+    alignSelf: "flex-start",
+  },
   button: {
     alignSelf: "flex-start",
     marginTop: 30,

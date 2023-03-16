@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Text } from "react-native";
+import { View, StyleSheet, Text, useWindowDimensions } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import colors from "../config/colors";
 
@@ -10,8 +10,9 @@ export default function AppBar({
   children,
   size = 35,
 }) {
+  const height = useWindowDimensions().height;
   return (
-    <View style={[styles.bar, barStyle]}>
+    <View style={[styles.bar, barStyle, { height: height * 0.08 }]}>
       <AntDesign
         style={styles.icon}
         name={name}
@@ -25,7 +26,6 @@ export default function AppBar({
 
 const styles = StyleSheet.create({
   bar: {
-    height: "8%",
     width: "100%",
     backgroundColor: "red",
     alignItems: "center",

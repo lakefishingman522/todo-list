@@ -5,6 +5,8 @@ export default function AppRow({
   children,
   justifyContent = "flex-start",
   alignItems = "flex-start",
+  alignSelf = "",
+  style,
 }) {
   return (
     <View
@@ -14,6 +16,9 @@ export default function AppRow({
           justifyContent: justifyContent,
           alignItems: alignItems,
         },
+
+        alignSelf !== "" ? { alignSelf: alignSelf } : {},
+        style,
       ]}
     >
       {children}

@@ -44,12 +44,6 @@ export default function LoginPage({ navigation }) {
   };
 
   return (
-    // <KeyboardAvoidingView
-    //   style={{
-    //     height: "100%",
-    //     backgroundColor: "yellow",
-    //   }}
-    // >
     <ScrollView style={{ height: "100%" }}>
       <View style={[styles.container, { height: height * 1.05 }]}>
         <View style={styles.upperSphere}></View>
@@ -188,7 +182,6 @@ export default function LoginPage({ navigation }) {
         </View>
       </View>
     </ScrollView>
-    // </KeyboardAvoidingView>
   );
 }
 
