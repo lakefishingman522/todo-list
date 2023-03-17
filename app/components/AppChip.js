@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import React from "react";
+import { StyleSheet, View } from "react-native";
 import colors from "../config/colors";
+import AppText from "./AppText";
 
 export default function AppChip({ data }) {
   return (
@@ -12,7 +13,9 @@ export default function AppChip({ data }) {
           : {},
       ]}
     >
-      <Text>{data.title}</Text>
+      <AppText style={{ fontSize: 14, color: colors.black }}>
+        {data.title}
+      </AppText>
     </View>
   );
 }
@@ -24,5 +27,4 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     borderRadius: 8,
   },
-  text: { fontSize: 14, color: colors.black },
 });

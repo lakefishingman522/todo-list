@@ -1,12 +1,7 @@
 import React from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  Pressable,
-  TouchableNativeFeedback,
-} from "react-native";
+import { View, StyleSheet, TouchableNativeFeedback } from "react-native";
 import colors from "../config/colors";
+import AppText from "./AppText";
 
 function AppButton({ title, color = "primary", onPress, style }) {
   return (
@@ -15,7 +10,15 @@ function AppButton({ title, color = "primary", onPress, style }) {
       onPress={onPress}
     >
       <View style={[styles.button, { backgroundColor: colors[color] }, style]}>
-        <Text style={styles.buttonTitle}> {title} </Text>
+        <AppText
+          style={{
+            fontSize: 15,
+            fontWeight: "700",
+            color: colors.white,
+          }}
+        >
+          {title}
+        </AppText>
       </View>
     </TouchableNativeFeedback>
   );
@@ -28,11 +31,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-  },
-  buttonTitle: {
-    fontSize: 15,
-    fontWeight: "bold",
-    color: colors.white,
   },
 });
 

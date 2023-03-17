@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Text, useWindowDimensions } from "react-native";
+import { View, StyleSheet, useWindowDimensions } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import colors from "../config/colors";
 
@@ -26,7 +26,6 @@ export default function AppBar({
 
 const styles = StyleSheet.create({
   bar: {
-    width: "100%",
     backgroundColor: "red",
     alignItems: "center",
     flexDirection: "row",

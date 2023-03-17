@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  Text,
   useWindowDimensions,
   View,
   StyleSheet,
@@ -13,6 +12,7 @@ import AppButton from "../components/AppButton";
 import colors from "../config/colors";
 import axios from "axios";
 import { Pressable } from "react-native";
+import AppText from "../components/AppText";
 
 export default function LoginPage({ navigation }) {
   const { height, width } = useWindowDimensions();
@@ -27,6 +27,7 @@ export default function LoginPage({ navigation }) {
   const [showPasswordSignUp, setShowPasswordSignUp] = useState(0);
 
   useEffect(() => {
+    console.log("");
     async function getUsers() {
       const user = await axios("https://jsonplaceholder.typicode.com/users");
       setUsers([...user.data]);
@@ -51,23 +52,23 @@ export default function LoginPage({ navigation }) {
         <View style={[styles.card, { top: height * 0.3, left: width * 0.075 }]}>
           <View style={styles.header}>
             <Pressable onPress={() => switchTab(0)}>
-              <Text
+              <AppText
                 style={
                   currentTab === 0 ? styles.currentTabText : styles.nextTabText
                 }
               >
                 LOGIN
-              </Text>
+              </AppText>
             </Pressable>
-            <Text style={{ flex: 8 }}></Text>
+            <AppText style={{ flex: 8 }}></AppText>
             <Pressable onPress={() => switchTab(1)}>
-              <Text
+              <AppText
                 style={
                   currentTab === 1 ? styles.currentTabText : styles.nextTabText
                 }
               >
                 SIGN UP
-              </Text>
+              </AppText>
             </Pressable>
           </View>
           {currentTab === 0 ? (
@@ -92,7 +93,7 @@ export default function LoginPage({ navigation }) {
                 }}
                 onPressIcon={() => showPasswordCall("Login")}
               />
-              <Text style={styles.forgetPass}>Forgot Password?</Text>
+              <AppText style={styles.forgetPass}>Forgot Password?</AppText>
               <AppButton
                 style={styles.loginButton}
                 title="Login"
@@ -203,12 +204,12 @@ const styles = StyleSheet.create({
   },
   currentTabText: {
     fontSize: 24,
-    fontWeight: "bold",
+    fontWeight: "700",
   },
   forgetPass: {
     marginVertical: 20,
     color: colors.grey,
-    fontWeight: 500,
+    fontWeight: "500",
   },
   header: {
     flexDirection: "row",
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
   },
   nextTabText: {
     fontSize: 18,
-    fontWeight: 500,
+    fontWeight: "500",
     color: colors.grey,
   },
   upperSphere: {

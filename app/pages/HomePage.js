@@ -8,7 +8,6 @@ import {
   TextInput,
   FlatList,
   Modal,
-  Text,
   Keyboard,
   useWindowDimensions,
   Pressable,
@@ -29,6 +28,7 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import "react-native-reanimated";
+import { useFonts, Poppins_400Regular } from "@expo-google-fonts/poppins";
 
 // Custom Imports
 import colors from "../config/colors";
@@ -42,6 +42,7 @@ import AppSliderBottomNavBar from "../components/AppSliderBottomNavBar";
 import AppRow from "../components/AppRow";
 import AppChip from "../components/AppChip";
 import { Calendar } from "react-native-calendars";
+import AppText from "../components/AppText";
 
 //Custom Hook
 function useTodos(todos) {
@@ -59,17 +60,16 @@ function useTodos(todos) {
   return [total, completed, pending];
 }
 
+let todosForSearch = [];
+
 export default function HomePage({ route, navigation }) {
   //States
   const { height, width } = useWindowDimensions();
   const [taskInputController, settaskInputController] = useState("");
   const [taskSearch, settaskSearch] = useState("");
   const [todos, setTodos] = useState([]);
-  const [todosForSearch, setTodosForSearch] = useState([]);
-  let [total, completed, pending] = useTodos(todos);
   const [fetching, setFetching] = useState(true);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
-  const [todoObject, setTodoObject] = useState({});
   const [keyboardStatus, setKeyboardStatus] = useState(0);
   const isAddOnFocus = useRef();
   const [bottomNavVisible, setBottomNavVisible] = useState(false);
@@ -81,6 +81,12 @@ export default function HomePage({ route, navigation }) {
   ]);
   const [editTodo, setEditTodo] = useState({});
   const [chipTextController, setChipTextController] = useState("");
+
+  let [total, completed, pending] = useTodos(todos);
+  //Font Importer
+  let [fontsLoaded, error] = useFonts({
+    Poppins_400Regular,
+  });
 
   //Get Todos
   useEffect(() => {
@@ -98,7 +104,7 @@ export default function HomePage({ route, navigation }) {
         }
       });
       setTodos(newTodos);
-      setTodosForSearch(newTodos);
+      todosForSearch = newTodos;
       [total, completed, pending] = useTodos(todos);
       setFetching(false);
     }
@@ -123,9 +129,11 @@ export default function HomePage({ route, navigation }) {
 
   //Listener For Bottom Nav Bar
   useEffect(() => {
-    if (bottomNavVisible) {
-      isAddOnFocus.current.focus();
-    } else isAddOnFocus.current.blur();
+    if (fontsLoaded) {
+      if (bottomNavVisible) {
+        isAddOnFocus.current.focus();
+      } else isAddOnFocus.current.blur();
+    }
   }, [bottomNavVisible]);
 
   //Handlers
@@ -150,15 +158,11 @@ export default function HomePage({ route, navigation }) {
 
     settaskInputController("");
     setTodos(newTodos);
-    setTodosForSearch(newTodos);
+    todosForSearch = newTodos;
     setBottomNavVisible(false);
   };
 
-  const closeDetailedView = () => setTodoObject({});
-
   const closeProfileView = () => setProfileModalVisible(false);
-
-  const showDetailedView = (item) => setTodoObject(item);
 
   const deletetodo = (item) => {
     let newTodos = todos.filter((todo) => {
@@ -177,8 +181,6 @@ export default function HomePage({ route, navigation }) {
 
     setTodos(newTodos);
   };
-
-  const modelReqClose = () => setTodoObject({});
 
   const profileModelReqClose = () => setToDoModalVisible(!profileModalVisible);
 
@@ -253,8 +255,8 @@ export default function HomePage({ route, navigation }) {
       context.startX = translateX.value;
     },
     onActive: (event, context) => {
-      if (event.translationX + context.startX > 0)
-        translateX.value = event.translationX + context.startX;
+      // if (event.translationX + context.startX > 0)
+      translateX.value = event.translationX + context.startX;
     },
     onEnd: () => {
       console.log(translateX.value);
@@ -267,405 +269,386 @@ export default function HomePage({ route, navigation }) {
     };
   });
 
-  return (
-    <GestureHandlerRootView style={styles.container}>
-      <View style={styles.toDoContainer}>
-        <Text style={{}}></Text>
-        <AppBar
-          size={30}
-          name={"search1"}
-          iconColor="white"
-          barStyle={[
-            styles.appBarStyle,
-            keyboardStatus ? { height: "11.8%" } : {},
-          ]}
-        >
-          <View style={styles.viewHeader}>
-            <TextInput
-              style={styles.searchBar}
-              onChangeText={(newText) => searchTodo(newText)}
-              value={taskSearch}
-              placeholder={"Search..."}
-              placeholderTextColor={"#FFFFF0"}
-            />
-            {keyboardStatus ? (
-              <AntDesign name="close" color={colors.white} size={20} />
-            ) : (
-              <View style={{ width: 20 }} />
-            )}
-            <AppIcon
-              name="user"
-              size={50}
-              iconColor={colors.primary}
-              backgroundColor={colors.white}
-              onPress={onPressProfileIcon}
-            />
-          </View>
-        </AppBar>
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={profileModalVisible}
-          onRequestClose={profileModelReqClose}
-        >
-          <View
-            style={[
-              styles.centeredView,
-              { justifyContent: "flex-start", marginTop: height * 0.1 },
+  if (fontsLoaded)
+    return (
+      <GestureHandlerRootView style={styles.container}>
+        <View style={styles.toDoContainer}>
+          <AppBar
+            size={30}
+            name={"search1"}
+            iconColor="white"
+            barStyle={[
+              styles.appBarStyle,
+              keyboardStatus ? { height: "11.8%" } : {},
             ]}
+          >
+            <View style={styles.viewHeader}>
+              <TextInput
+                style={styles.searchBar}
+                onChangeText={(newText) => searchTodo(newText)}
+                value={taskSearch}
+                placeholder={"Search..."}
+                placeholderTextColor={"#FFFFF0"}
+              />
+              {keyboardStatus || taskSearch != "" ? (
+                <View style={{ width: 30 }}>
+                  <AntDesign
+                    name="close"
+                    onPress={() => {
+                      settaskSearch("");
+                      setTodos(search(todosForSearch, ""));
+                    }}
+                    color={colors.white}
+                    size={20}
+                  />
+                </View>
+              ) : (
+                <View style={{ width: 20 }} />
+              )}
+              <AppIcon
+                name="user"
+                size={50}
+                iconColor={colors.primary}
+                backgroundColor={colors.white}
+                onPress={onPressProfileIcon}
+              />
+            </View>
+          </AppBar>
+          <Modal
+            animationType="fade"
+            transparent={true}
+            visible={profileModalVisible}
+            onRequestClose={profileModelReqClose}
           >
             <View
               style={[
-                styles.modalView,
+                styles.centeredView,
                 {
-                  width: "90%",
+                  justifyContent: "flex-start",
+                  alignItems: "flex-end",
+                  marginTop: height * 0.09,
                 },
               ]}
             >
-              <AppRow justifyContent="space-between">
-                <Text
-                  style={[
-                    styles.modalText,
-                    { fontWeight: "bold", fontSize: 18 },
-                  ]}
-                >
-                  Hi!! {route.params.name}
-                </Text>
-                <FontAwesome
-                  onPress={closeProfileView}
-                  name="close"
-                  size={25}
-                  color={colors.black}
-                />
-              </AppRow>
-
-              <AppRow justifyContent="space-between">
-                <Text style={{ fontSize: 15, fontWeight: 600 }}>Completed</Text>
-                <Text style={{ fontSize: 15, fontWeight: 600 }}>Pending</Text>
-              </AppRow>
-
-              <AppRow>
-                <View
-                  style={{
-                    flex: completed / total,
-                    height: 20,
-                    backgroundColor: colors.primary,
-                    marginVertical: 10,
-                  }}
-                >
-                  <Text style={{ paddingHorizontal: 8, color: colors.white }}>
-                    {completed}
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    flex: 1 - completed / total,
-                    height: 20,
-                    backgroundColor: colors.secondary,
-                    marginVertical: 10,
-                  }}
-                >
-                  <Text
-                    style={{
-                      paddingHorizontal: 8,
-                      color: colors.white,
-                      alignSelf: "flex-end",
-                    }}
-                  >
-                    {pending}
-                  </Text>
-                </View>
-              </AppRow>
-
-              <AppButton
-                onPress={navigation.goBack}
-                style={[styles.closeModalBtn, { width: "30%", marginTop: 20 }]}
-                title="Log Out"
+              <View
+                style={[styles.profileTriangle, { marginRight: width * 0.11 }]}
               />
-            </View>
-          </View>
-        </Modal>
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={JSON.stringify(todoObject) !== "{}"}
-          onRequestClose={modelReqClose}
-        >
-          <View style={styles.centeredView}>
-            <View style={styles.modalView}>
-              <React.Fragment>
-                <TodoModelRowComponent
-                  heading={"Title"}
-                  value={todoObject.title}
-                />
-                <TodoModelRowComponent
-                  heading={"Date"}
-                  value={todoObject.date}
-                />
-                <TodoModelRowComponent
-                  heading={"Completed"}
-                  value={todoObject.completed ? "Completed" : "Pending"}
-                />
-                <AppButton
-                  onPress={closeDetailedView}
-                  style={styles.closeModalBtn}
-                  title="Close"
-                />
-              </React.Fragment>
-            </View>
-          </View>
-        </Modal>
-        {todos.length !== 0 ? (
-          <FlatList
-            refreshing={fetching}
-            onRefresh={() => {
-              setFetching(false);
-              setTodos([...todos]);
-              setFetching(false);
-            }}
-            style={styles.list}
-            data={todos}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => {
-              return (
-                <AppToDoList
-                  key={item.id}
-                  onPressCheckBox={() => markCompletedOnToDo(item)}
-                  onPressContent={() => showDetailedView(item)}
-                  onPressCross={() => deletetodo(item)}
-                  data={item}
-                />
-              );
-            }}
-          />
-        ) : (
-          <View
-            style={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ fontSize: 20 }}>
-              {!fetching ? "No Todos Match" : "Loading..."}
-            </Text>
-          </View>
-        )}
-      </View>
-      <AppSliderBottomNavBar
-        translateY={translateY}
-        panGestureEvent={panGestureEvent}
-      >
-        <View
-          style={{
-            width: "100%",
-            height: "100%",
-            alignItems: "flex-end",
-            // justifyContent: "space-between",
-            overflow: "hidden",
-          }}
-        >
-          <View style={{ alignItems: "center", width: "100%" }}>
-            <View
-              style={{
-                backgroundColor: colors.white,
-                height: 4,
-                width: 30,
-                borderRadius: 20,
-                marginVertical: 8,
-              }}
-            />
-            {!bottomNavVisible ? (
-              <Pressable
-                onPress={() => {
-                  translateY.value = withTiming(height * -0.675, {
-                    duration: 500,
-                    easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-                  });
-                  setBottomNavVisible(true);
-                }}
-              >
-                <AppRow alignItems="center">
-                  <AntDesign name="pluscircle" color={colors.white} size={45} />
-                  <Text
-                    style={{
-                      marginHorizontal: 10,
-                      color: colors.white,
-                      fontWeight: "600",
-                      fontSize: 18,
-                    }}
-                  >
-                    Add New Todo
-                  </Text>
-                </AppRow>
-              </Pressable>
-            ) : (
-              <View style={{ height: 30 }} />
-            )}
-            <TextInput
-              ref={isAddOnFocus}
-              style={styles.addBar}
-              onChangeText={settaskInputController}
-              value={taskInputController}
-              placeholder={"What do you want to do?"}
-              placeholderTextColor={"rgba(255, 255, 255, 0.3)"}
-            />
-
-            <PanGestureHandler onGestureEvent={panGestureEventChips}>
-              <Animated.View
+              <View
                 style={[
+                  styles.modalView,
                   {
-                    justifyContent: "flex-start",
-                    flexDirection: "row",
-                    width: width * 2,
-                    marginHorizontal: 18,
-                    rowGap: 12.5,
-                    columnGap: 15,
-                    flexWrap: "wrap",
-                    marginTop: 30,
+                    width: width * 0.9,
+                    alignSelf: "center",
                   },
-                  animatedStyleChips,
                 ]}
               >
-                {todoCategories.map((category) => (
-                  <Pressable
-                    key={category.id}
-                    onPress={() => selectChip(category.id)}
-                    onLongPress={() => editChipOnLongPress(category.id)}
-                  >
-                    <AppChip data={category} />
-                  </Pressable>
-                ))}
-                <AppIcon
-                  name="plus"
-                  size={42}
-                  iconColor={colors.black}
-                  backgroundColor={colors.white}
-                  style={{ borderRadius: 5 }}
-                  onPress={createNewChip}
-                />
-              </Animated.View>
-            </PanGestureHandler>
-            <View
-              style={{
-                marginHorizontal: 20,
-                marginVertical: 20,
-                backgroundColor: "red",
-              }}
-            >
-              <Calendar />
-            </View>
-            <View
-              style={{
-                borderWidth: 0.3,
-                width: "100%",
-                borderColor: "rgba(255, 255, 255, 0.5)",
-                marginVertical: 40,
-              }}
-            />
-          </View>
-          <AppRow>
-            <AppButton
-              style={{
-                width: 80,
-                padding: 10,
-                borderRadius: 10,
-                marginVertical: 40,
-                marginHorizontal: 10,
-              }}
-              title="Cancel"
-              onPress={() => {
-                translateY.value = withTiming(0);
-                setBottomNavVisible(false);
-              }}
-            />
-            <AppButton
-              style={{
-                width: 80,
-                padding: 10,
-                borderRadius: 10,
-                marginVertical: 40,
-                marginHorizontal: 10,
-              }}
-              title="Save"
-              onPress={addTodo}
-            />
-          </AppRow>
-          <Modal
-            animationType="slide"
-            transparent={true}
-            visible={JSON.stringify(editTodo) !== "{}"}
-            onRequestClose={chipModelReqClose}
-          >
-            <View style={styles.centeredView}>
-              <View style={styles.modalView}>
-                <React.Fragment>
-                  <Text style={{ fontWeight: 700 }}>
-                    {editTodo.title !== "" ? "Edit Chip" : "Add Chip"}
-                  </Text>
-                  <TextInput
-                    placeholder={editTodo.title}
-                    autoFocus={true}
-                    style={{
-                      marginBottom: 20,
-                      marginTop: 10,
-                      borderWidth: 1,
-                      padding: 10,
-                      borderRadius: 10,
-                    }}
-                    onChangeText={(newText) => setChipTextController(newText)}
+                <AppRow justifyContent="space-between">
+                  <AppText style={styles.modalText}>
+                    Hi!! {route.params.name}
+                  </AppText>
+                  <FontAwesome
+                    onPress={closeProfileView}
+                    name="close"
+                    size={25}
+                    color={colors.black}
                   />
-                  <AppRow alignSelf="flex-end">
-                    <AppButton
-                      onPress={chipModelReqClose}
+                </AppRow>
+
+                <AppRow justifyContent="space-between">
+                  <AppText style={{ fontSize: 15, fontWeight: "600" }}>
+                    Completed
+                  </AppText>
+                  <AppText style={{ fontSize: 15, fontWeight: "600" }}>
+                    Pending
+                  </AppText>
+                </AppRow>
+
+                <AppRow>
+                  <View
+                    style={{
+                      flex: completed / total,
+                      height: 20,
+                      backgroundColor: colors.primary,
+                      marginVertical: 10,
+                    }}
+                  >
+                    <AppText
+                      style={{ paddingHorizontal: 8, color: colors.white }}
+                    >
+                      {completed}
+                    </AppText>
+                  </View>
+                  <View
+                    style={{
+                      flex: 1 - completed / total,
+                      height: 20,
+                      backgroundColor: colors.secondary,
+                      marginVertical: 10,
+                    }}
+                  >
+                    <AppText
                       style={{
-                        width: 60,
-                        height: 30,
-                        marginVertical: 10,
-                        marginLeft: 100,
+                        paddingHorizontal: 8,
+                        color: colors.white,
+                        alignSelf: "flex-end",
                       }}
-                      title="Close"
-                    />
-                    <AppButton
-                      onPress={() => saveChipChange(chipTextController)}
-                      style={{
-                        width: 60,
-                        height: 30,
-                        marginVertical: 10,
-                        marginLeft: 10,
-                      }}
-                      title="Save"
-                    />
-                  </AppRow>
-                </React.Fragment>
+                    >
+                      {pending}
+                    </AppText>
+                  </View>
+                </AppRow>
+
+                <AppButton
+                  onPress={navigation.goBack}
+                  style={[
+                    styles.closeModalBtn,
+                    { width: "30%", marginTop: 20 },
+                  ]}
+                  title="Log Out"
+                />
               </View>
             </View>
           </Modal>
+          {todos.length !== 0 ? (
+            <FlatList
+              refreshing={fetching}
+              onRefresh={() => {
+                setFetching(false);
+                setTodos([...todos]);
+                setFetching(false);
+              }}
+              style={!keyboardStatus ? { marginBottom: height * 0.09 } : {}}
+              data={todos}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => {
+                return (
+                  <AppToDoList
+                    key={item.id}
+                    onPressCheckBox={() => markCompletedOnToDo(item)}
+                    onPressCross={() => deletetodo(item)}
+                    data={item}
+                  />
+                );
+              }}
+            />
+          ) : (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <AppText style={{ fontSize: 20 }}>
+                {!fetching ? "No Todos Match" : "Loading..."}
+              </AppText>
+            </View>
+          )}
         </View>
-      </AppSliderBottomNavBar>
-    </GestureHandlerRootView>
-  );
-}
+        <AppSliderBottomNavBar
+          translateY={translateY}
+          panGestureEvent={panGestureEvent}
+        >
+          <View
+            style={{
+              width: "100%",
+              height: "100%",
+              alignItems: "flex-end",
+              overflow: "hidden",
+            }}
+          >
+            <View style={{ alignItems: "center", width: "100%" }}>
+              <View
+                style={{
+                  backgroundColor: colors.white,
+                  height: 4,
+                  width: 30,
+                  borderRadius: 20,
+                  marginVertical: 8,
+                }}
+              />
+              {!bottomNavVisible ? (
+                <Pressable
+                  onPress={() => {
+                    translateY.value = withTiming(height * -0.675, {
+                      duration: 500,
+                      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+                    });
+                    setBottomNavVisible(true);
+                  }}
+                >
+                  <AppRow alignItems="center">
+                    <AntDesign
+                      name="pluscircle"
+                      color={colors.white}
+                      size={45}
+                    />
+                    <AppText
+                      style={{
+                        marginHorizontal: 10,
+                        color: colors.white,
+                        fontWeight: "600",
+                        fontSize: 18,
+                      }}
+                    >
+                      Add New Todo
+                    </AppText>
+                  </AppRow>
+                </Pressable>
+              ) : (
+                <View style={{ height: 30 }} />
+              )}
+              <TextInput
+                ref={isAddOnFocus}
+                style={styles.addBar}
+                onChangeText={settaskInputController}
+                value={taskInputController}
+                placeholder={"What do you want to do?"}
+                placeholderTextColor={"rgba(255, 255, 255, 0.3)"}
+              />
 
-// Helper Components
-function TodoModelRowComponent({ heading, value }) {
-  return (
-    <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-      <Text style={[styles.modalText, { fontWeight: "bold", fontSize: 15 }]}>
-        {heading} :{" "}
-      </Text>
-      <Text style={styles.modalText}>{value}</Text>
-    </View>
-  );
+              <PanGestureHandler onGestureEvent={panGestureEventChips}>
+                <Animated.View
+                  style={[
+                    {
+                      justifyContent: "flex-start",
+                      flexDirection: "row",
+                      width: width * 2,
+                      marginHorizontal: 18,
+                      rowGap: 12.5,
+                      columnGap: 15,
+                      flexWrap: "wrap",
+                      marginTop: 30,
+                      // backgroundColor: "red",
+                    },
+                    animatedStyleChips,
+                  ]}
+                >
+                  {todoCategories.map((category) => (
+                    <Pressable
+                      key={category.id}
+                      onPress={() => selectChip(category.id)}
+                      onLongPress={() => editChipOnLongPress(category.id)}
+                    >
+                      <AppChip data={category} />
+                    </Pressable>
+                  ))}
+                  <AppIcon
+                    name="plus"
+                    size={42}
+                    iconColor={colors.black}
+                    backgroundColor={colors.white}
+                    style={{ borderRadius: 5 }}
+                    onPress={createNewChip}
+                  />
+                </Animated.View>
+              </PanGestureHandler>
+              <View
+                style={{
+                  width: width * 0.75,
+                  marginVertical: 20,
+                  backgroundColor: "red",
+                }}
+              >
+                <Calendar />
+              </View>
+              <View
+                style={{
+                  borderWidth: 0.3,
+                  width: "100%",
+                  borderColor: "rgba(255, 255, 255, 0.5)",
+                  marginVertical: 20,
+                }}
+              />
+            </View>
+            <AppRow>
+              <AppButton
+                style={{
+                  width: 80,
+                  padding: 10,
+                  borderRadius: 10,
+                  marginHorizontal: 10,
+                }}
+                title="Cancel"
+                onPress={() => {
+                  translateY.value = withTiming(0);
+                  setBottomNavVisible(false);
+                }}
+              />
+              <AppButton
+                style={{
+                  width: 80,
+                  padding: 10,
+                  borderRadius: 10,
+                  marginHorizontal: 10,
+                }}
+                title="Save"
+                onPress={addTodo}
+              />
+            </AppRow>
+            <Modal
+              animationType="slide"
+              transparent={true}
+              visible={JSON.stringify(editTodo) !== "{}"}
+              onRequestClose={chipModelReqClose}
+            >
+              <View style={styles.centeredView}>
+                <View style={styles.modalView}>
+                  <React.Fragment>
+                    <AppText style={{ fontWeight: "700" }}>
+                      {editTodo.title !== "" ? "Edit Chip" : "Add Chip"}
+                    </AppText>
+                    <TextInput
+                      placeholder={editTodo.title}
+                      autoFocus={true}
+                      style={{
+                        marginBottom: 20,
+                        marginTop: 10,
+                        borderWidth: 1,
+                        padding: 10,
+                        borderRadius: 10,
+                      }}
+                      onChangeText={(newText) => setChipTextController(newText)}
+                    />
+                    <AppRow alignSelf="flex-end">
+                      <AppButton
+                        onPress={chipModelReqClose}
+                        style={{
+                          width: 60,
+                          height: 30,
+                          marginVertical: 10,
+                          marginLeft: 100,
+                        }}
+                        title="Close"
+                      />
+                      <AppButton
+                        onPress={() => saveChipChange(chipTextController)}
+                        style={{
+                          width: 60,
+                          height: 30,
+                          marginVertical: 10,
+                          marginLeft: 10,
+                        }}
+                        title="Save"
+                      />
+                    </AppRow>
+                  </React.Fragment>
+                </View>
+              </View>
+            </Modal>
+          </View>
+        </AppSliderBottomNavBar>
+      </GestureHandlerRootView>
+    );
 }
 
 // StyleSheet
 const styles = StyleSheet.create({
   appBarStyle: {
     backgroundColor: colors.primary,
-    width: "95%",
     marginTop: 10,
-    borderRadius: 25,
+    marginHorizontal: 24,
+    borderRadius: 50,
     overflow: "hidden",
   },
   addBar: {
@@ -704,8 +687,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   modalText: {
-    fontSize: 15,
+    fontSize: 18,
     marginBottom: 20,
+    fontWeight: "bold",
   },
   modalView: {
     marginHorizontal: 50,
@@ -721,15 +705,28 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  profileTriangle: {
+    width: 0,
+    height: 0,
+    backgroundColor: "transparent",
+    borderStyle: "solid",
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderBottomWidth: 20,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderBottomColor: colors.primary,
+    transform: [{ rotate: "180deg" }],
+  },
   searchBar: { color: colors.white, flex: 0.8 },
   text: {
     fontSize: 18,
-    fontWeight: 700,
+    fontWeight: "700",
     color: colors.white,
   },
   title: {
     fontSize: 24,
-    fontWeight: 600,
+    fontWeight: "600",
     marginVertical: 15,
   },
   toDoContainer: {
