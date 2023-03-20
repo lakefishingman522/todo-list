@@ -10,15 +10,7 @@ function AppButton({ title, color = "primary", onPress, style }) {
       onPress={onPress}
     >
       <View style={[styles.button, { backgroundColor: colors[color] }, style]}>
-        <AppText
-          style={{
-            fontSize: 15,
-            fontWeight: "700",
-            color: colors.white,
-          }}
-        >
-          {title}
-        </AppText>
+        <AppText style={styles.title}>{title}</AppText>
       </View>
     </TouchableNativeFeedback>
   );
@@ -31,6 +23,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+  },
+  title: {
+    fontSize: 15,
+    fontFamily: "Poppins_700Bold",
+    color: colors.white,
   },
 });
 

@@ -13,9 +13,7 @@ export default function AppChip({ data }) {
           : {},
       ]}
     >
-      <AppText style={{ fontSize: 14, color: colors.black }}>
-        {data.title}
-      </AppText>
+      <AppText style={styles.title}>{data.title}</AppText>
     </View>
   );
 }
@@ -26,5 +24,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 13,
     borderRadius: 8,
+  },
+  title: {
+    fontSize: 14,
+    color: colors.black,
+    fontFamily: "Poppins_400Regular",
   },
 });

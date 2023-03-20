@@ -12,10 +12,6 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { PanGestureHandler } from "react-native-gesture-handler";
-import {
-  useFonts,
-  Poppins_400Regular_Italic,
-} from "@expo-google-fonts/poppins";
 
 import AppText from "./AppText";
 
@@ -33,9 +29,6 @@ export default function AppToDoList({
 
   let time = data.date.slice(16, 21);
   let date = data.date.slice(0, 15);
-  let [fontsLoaded, error] = useFonts({
-    Poppins_400Regular_Italic,
-  });
 
   // Slide To Delete
   const translateX = useSharedValue(0);
@@ -69,101 +62,69 @@ export default function AppToDoList({
       height: height.value,
     };
   });
-  if (fontsLoaded)
-    return (
-      <View>
-        <MaterialCommunityIcons
-          onPress={onPressCross}
-          style={styles.icon}
-          name="delete"
-          color="red"
-          size={35}
-        />
-        <PanGestureHandler
-          onGestureEvent={panGestureEventToSlide}
-          activateAfterLongPress={80}
+
+  return (
+    <View>
+      <MaterialCommunityIcons
+        onPress={onPressCross}
+        style={styles.icon}
+        name="delete"
+        color="red"
+        size={35}
+      />
+      <PanGestureHandler
+        onGestureEvent={panGestureEventToSlide}
+        activateAfterLongPress={80}
+      >
+        <Animated.View
+          style={[styles.container, animatedStyle, animatedStyletoShowDetails]}
         >
-          <Animated.View
-            style={[
-              styles.container,
-              animatedStyle,
-              animatedStyletoShowDetails,
-            ]}
-          >
-            <View style={[styles.indicator, indicator]} />
-            <View>
-              <AppRow justifyContent="space-between">
-                <AppText
-                  numberOfLines={extraHeight > 0 ? 2 : 3}
-                  onPress={onPressContent}
-                  style={{
-                    width: "80%",
-                    padding: 4,
-                    fontSize: 16,
-                    fontWeight: "600",
-                    textTransform: "capitalize",
-                  }}
-                >
-                  {data.title}
-                </AppText>
-                <AppText
-                  style={{
-                    margin: 4,
-                    color: colors.grey,
-                    fontWeight: "400",
-                    fontSize: 12.5,
-                  }}
-                >
-                  {time}
+          <View style={[styles.indicator, indicator]} />
+          <View>
+            <AppRow justifyContent="space-between">
+              <AppText
+                numberOfLines={extraHeight > 0 ? 2 : 3}
+                onPress={onPressContent}
+                style={styles.title}
+              >
+                {data.title}
+              </AppText>
+              <AppText style={styles.time}>{time}</AppText>
+            </AppRow>
+            <AppText style={styles.date}>{date}</AppText>
+            {extraHeight < 0 ? (
+              <AppRow style={styles.button} alignItems="center">
+                <BouncyCheckbox
+                  fillColor={colors.primary}
+                  onPress={onPressCheckBox}
+                  size={24}
+                  isChecked={data.completed}
+                />
+                <AppText style={styles.check}>
+                  {data.completed ? "Completed" : "Pending"}
                 </AppText>
               </AppRow>
-              <AppText
-                style={{
-                  margin: 4,
-                  color: colors.grey,
-                  fontWeight: "400",
-                  paddingTop: 8,
-                }}
-              >
-                {date}
-              </AppText>
-              {extraHeight < 0 ? (
-                <AppRow style={styles.button} alignItems="center">
-                  <BouncyCheckbox
-                    fillColor={colors.primary}
-                    onPress={onPressCheckBox}
-                    size={24}
-                    isChecked={data.completed}
-                  />
-                  <Text
-                    style={{
-                      fontFamily: "Poppins_400Regular_Italic",
-                    }}
-                  >
-                    {data.completed ? "Completed" : "Pending"}
-                  </Text>
-                </AppRow>
-              ) : null}
-            </View>
-            <View style={styles.arrow}>
-              <MaterialIcons
-                name={
-                  extraHeight > 0 ? "keyboard-arrow-down" : "keyboard-arrow-up"
-                }
-                size={24}
-                color="black"
-                onPress={() => {
-                  height.value = withTiming(height.value + extraHeight, {
-                    duration: 400,
-                  });
-                  setterExtraHeight(extraHeight * -1);
-                }}
-              />
-            </View>
-          </Animated.View>
-        </PanGestureHandler>
-      </View>
-    );
+            ) : null}
+          </View>
+          <View style={styles.arrow}>
+            <MaterialIcons
+              name={
+                extraHeight > 0 ? "keyboard-arrow-down" : "keyboard-arrow-up"
+              }
+              size={24}
+              color="black"
+              onPress={() => {
+                height.value = withTiming(height.value + extraHeight, {
+                  duration: 400,
+                });
+                setterExtraHeight(extraHeight * -1);
+              }}
+            />
+          </View>
+        </Animated.View>
+      </PanGestureHandler>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -177,6 +138,9 @@ const styles = StyleSheet.create({
   button: {
     position: "absolute",
     bottom: 30,
+  },
+  check: {
+    fontFamily: "Poppins_400Regular_Italic",
   },
   container: {
     overflow: "hidden",
@@ -192,6 +156,11 @@ const styles = StyleSheet.create({
     shadowColor: colors.lightGray,
     flexDirection: "row",
   },
+  date: {
+    margin: 4,
+    color: colors.grey,
+    paddingTop: 8,
+  },
   icon: { position: "absolute", right: 40, top: "40%" },
   indicator: {
     marginVertical: 8,
@@ -199,5 +168,17 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
+  },
+  time: {
+    margin: 4,
+    color: colors.grey,
+    fontSize: 12.5,
+  },
+  title: {
+    width: "80%",
+    padding: 4,
+    fontSize: 16,
+    fontFamily: "Poppins_600SemiBold",
+    textTransform: "capitalize",
   },
 });

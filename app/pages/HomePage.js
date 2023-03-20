@@ -43,6 +43,8 @@ import AppRow from "../components/AppRow";
 import AppChip from "../components/AppChip";
 import { Calendar } from "react-native-calendars";
 import AppText from "../components/AppText";
+import AppSizedBox from "../components/AppSizedBox";
+import AppLine from "../components/AppLine";
 
 //Custom Hook
 function useTodos(todos) {
@@ -148,7 +150,7 @@ export default function HomePage({ route, navigation }) {
     let newTodos = [
       {
         userId: route.params.id,
-        id: todos.length + 1,
+        id: Math.random(),
         title: taskInputController.trim(),
         completed: false,
         date: new Date().toString().slice(0, 24),
@@ -291,7 +293,7 @@ export default function HomePage({ route, navigation }) {
                 placeholderTextColor={"#FFFFF0"}
               />
               {keyboardStatus || taskSearch != "" ? (
-                <View style={{ width: 30 }}>
+                <AppSizedBox width={30} height={20}>
                   <AntDesign
                     name="close"
                     onPress={() => {
@@ -301,9 +303,9 @@ export default function HomePage({ route, navigation }) {
                     color={colors.white}
                     size={20}
                   />
-                </View>
+                </AppSizedBox>
               ) : (
-                <View style={{ width: 20 }} />
+                <AppSizedBox width={20} height={20} />
               )}
               <AppIcon
                 name="user"
@@ -355,46 +357,20 @@ export default function HomePage({ route, navigation }) {
                 </AppRow>
 
                 <AppRow justifyContent="space-between">
-                  <AppText style={{ fontSize: 15, fontWeight: "600" }}>
-                    Completed
-                  </AppText>
-                  <AppText style={{ fontSize: 15, fontWeight: "600" }}>
-                    Pending
-                  </AppText>
+                  <AppText style={styles.analysisBar}>Completed</AppText>
+                  <AppText style={styles.analysisBar}>Pending</AppText>
                 </AppRow>
 
                 <AppRow>
                   <View
-                    style={{
-                      flex: completed / total,
-                      height: 20,
-                      backgroundColor: colors.primary,
-                      marginVertical: 10,
-                    }}
+                    style={[styles.completedBar, { flex: completed / total }]}
                   >
-                    <AppText
-                      style={{ paddingHorizontal: 8, color: colors.white }}
-                    >
-                      {completed}
-                    </AppText>
+                    <AppText style={styles.completedText}>{completed}</AppText>
                   </View>
                   <View
-                    style={{
-                      flex: 1 - completed / total,
-                      height: 20,
-                      backgroundColor: colors.secondary,
-                      marginVertical: 10,
-                    }}
+                    style={[styles.pendingBar, { flex: 1 - completed / total }]}
                   >
-                    <AppText
-                      style={{
-                        paddingHorizontal: 8,
-                        color: colors.white,
-                        alignSelf: "flex-end",
-                      }}
-                    >
-                      {pending}
-                    </AppText>
+                    <AppText style={styles.pendingText}>{pending}</AppText>
                   </View>
                 </AppRow>
 
@@ -432,14 +408,8 @@ export default function HomePage({ route, navigation }) {
               }}
             />
           ) : (
-            <View
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <AppText style={{ fontSize: 20 }}>
+            <View style={styles.mainContent}>
+              <AppText style={styles.loading}>
                 {!fetching ? "No Todos Match" : "Loading..."}
               </AppText>
             </View>
@@ -449,26 +419,12 @@ export default function HomePage({ route, navigation }) {
           translateY={translateY}
           panGestureEvent={panGestureEvent}
         >
-          <View
-            style={{
-              width: "100%",
-              height: "100%",
-              alignItems: "flex-end",
-              overflow: "hidden",
-            }}
-          >
-            <View style={{ alignItems: "center", width: "100%" }}>
-              <View
-                style={{
-                  backgroundColor: colors.white,
-                  height: 4,
-                  width: 30,
-                  borderRadius: 20,
-                  marginVertical: 8,
-                }}
-              />
+          <View style={styles.bottomNavContentV1}>
+            <View style={styles.bottomNavContentV2}>
+              <View style={styles.bottomNavContentV3} />
               {!bottomNavVisible ? (
                 <Pressable
+                  style={styles.addPressable}
                   onPress={() => {
                     translateY.value = withTiming(height * -0.675, {
                       duration: 500,
@@ -483,21 +439,10 @@ export default function HomePage({ route, navigation }) {
                       color={colors.white}
                       size={45}
                     />
-                    <AppText
-                      style={{
-                        marginHorizontal: 10,
-                        color: colors.white,
-                        fontWeight: "600",
-                        fontSize: 18,
-                      }}
-                    >
-                      Add New Todo
-                    </AppText>
+                    <AppText style={styles.pressableText}>Add New Todo</AppText>
                   </AppRow>
                 </Pressable>
-              ) : (
-                <View style={{ height: 30 }} />
-              )}
+              ) : null}
               <TextInput
                 ref={isAddOnFocus}
                 style={styles.addBar}
@@ -538,7 +483,7 @@ export default function HomePage({ route, navigation }) {
                     size={42}
                     iconColor={colors.black}
                     backgroundColor={colors.white}
-                    style={{ borderRadius: 5 }}
+                    style={styles.addIcon}
                     onPress={createNewChip}
                   />
                 </Animated.View>
@@ -547,28 +492,15 @@ export default function HomePage({ route, navigation }) {
                 style={{
                   width: width * 0.75,
                   marginVertical: 20,
-                  backgroundColor: "red",
                 }}
               >
                 <Calendar />
               </View>
-              <View
-                style={{
-                  borderWidth: 0.3,
-                  width: "100%",
-                  borderColor: "rgba(255, 255, 255, 0.5)",
-                  marginVertical: 20,
-                }}
-              />
+              <AppLine />
             </View>
             <AppRow>
               <AppButton
-                style={{
-                  width: 80,
-                  padding: 10,
-                  borderRadius: 10,
-                  marginHorizontal: 10,
-                }}
+                style={styles.addFinalizingButton}
                 title="Cancel"
                 onPress={() => {
                   translateY.value = withTiming(0);
@@ -576,12 +508,7 @@ export default function HomePage({ route, navigation }) {
                 }}
               />
               <AppButton
-                style={{
-                  width: 80,
-                  padding: 10,
-                  borderRadius: 10,
-                  marginHorizontal: 10,
-                }}
+                style={styles.addFinalizingButton}
                 title="Save"
                 onPress={addTodo}
               />
@@ -595,40 +522,24 @@ export default function HomePage({ route, navigation }) {
               <View style={styles.centeredView}>
                 <View style={styles.modalView}>
                   <React.Fragment>
-                    <AppText style={{ fontWeight: "700" }}>
+                    <AppText style={styles.chipModelTitle}>
                       {editTodo.title !== "" ? "Edit Chip" : "Add Chip"}
                     </AppText>
                     <TextInput
                       placeholder={editTodo.title}
                       autoFocus={true}
-                      style={{
-                        marginBottom: 20,
-                        marginTop: 10,
-                        borderWidth: 1,
-                        padding: 10,
-                        borderRadius: 10,
-                      }}
+                      style={styles.chipModelInput}
                       onChangeText={(newText) => setChipTextController(newText)}
                     />
                     <AppRow alignSelf="flex-end">
                       <AppButton
                         onPress={chipModelReqClose}
-                        style={{
-                          width: 60,
-                          height: 30,
-                          marginVertical: 10,
-                          marginLeft: 100,
-                        }}
+                        style={styles.chipModelClose}
                         title="Close"
                       />
                       <AppButton
                         onPress={() => saveChipChange(chipTextController)}
-                        style={{
-                          width: 60,
-                          height: 30,
-                          marginVertical: 10,
-                          marginLeft: 10,
-                        }}
+                        style={styles.chipModelSave}
                         title="Save"
                       />
                     </AppRow>
@@ -644,6 +555,15 @@ export default function HomePage({ route, navigation }) {
 
 // StyleSheet
 const styles = StyleSheet.create({
+  analysisBar: { fontSize: 15, fontFamily: "Poppins_600SemiBold" },
+  addBar: {
+    color: colors.white,
+    marginHorizontal: 20,
+    marginTop: 20,
+    fontSize: 25,
+    alignSelf: "flex-start",
+    fontFamily: "Poppins_400Regular",
+  },
   appBarStyle: {
     backgroundColor: colors.primary,
     marginTop: 10,
@@ -651,11 +571,23 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     overflow: "hidden",
   },
-  addBar: {
-    color: colors.white,
-    marginHorizontal: 20,
-    fontSize: 25,
-    alignSelf: "flex-start",
+  addIcon: { borderRadius: 5 },
+  addPressable: {
+    marginBottom: 10,
+  },
+  bottomNavContentV1: {
+    width: "100%",
+    height: "100%",
+    alignItems: "flex-end",
+    overflow: "hidden",
+  },
+  bottomNavContentV2: { alignItems: "center", width: "100%" },
+  bottomNavContentV3: {
+    backgroundColor: colors.white,
+    height: 4,
+    width: 30,
+    borderRadius: 20,
+    marginVertical: 8,
   },
   button: {
     alignSelf: "flex-start",
@@ -665,12 +597,44 @@ const styles = StyleSheet.create({
     height: "4%",
     borderRadius: 10,
   },
+  addFinalizingButton: {
+    width: 80,
+    padding: 10,
+    borderRadius: 10,
+    marginHorizontal: 10,
+  },
   centeredView: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
+  chipModelInput: {
+    marginBottom: 20,
+    marginTop: 10,
+    borderWidth: 1,
+    padding: 10,
+    borderRadius: 10,
+  },
+  chipModelClose: {
+    width: 60,
+    height: 30,
+    marginVertical: 10,
+    marginLeft: 100,
+  },
+  chipModelSave: {
+    width: 60,
+    height: 30,
+    marginVertical: 10,
+    marginLeft: 10,
+  },
+  chipModelTitle: { fontFamily: "Poppins_700Bold" },
   closeModalBtn: { padding: 5, alignSelf: "flex-end" },
+  completedBar: {
+    height: 20,
+    backgroundColor: colors.primary,
+    marginVertical: 10,
+  },
+  completedText: { paddingHorizontal: 8, color: colors.white },
   container: {
     flex: 1,
     backgroundColor: "#f8f4f4",
@@ -686,10 +650,16 @@ const styles = StyleSheet.create({
     borderColor: colors.grey,
     borderRadius: 5,
   },
+  loading: { fontSize: 20 },
+  mainContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   modalText: {
     fontSize: 18,
     marginBottom: 20,
-    fontWeight: "bold",
+    fontFamily: "Poppins_700Bold",
   },
   modalView: {
     marginHorizontal: 50,
@@ -705,6 +675,22 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  pendingBar: {
+    height: 20,
+    backgroundColor: colors.secondary,
+    marginVertical: 10,
+  },
+  pendingText: {
+    paddingHorizontal: 8,
+    color: colors.white,
+    alignSelf: "flex-end",
+  },
+  pressableText: {
+    marginHorizontal: 10,
+    color: colors.white,
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 18,
+  },
   profileTriangle: {
     width: 0,
     height: 0,
@@ -718,16 +704,10 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.primary,
     transform: [{ rotate: "180deg" }],
   },
-  searchBar: { color: colors.white, flex: 0.8 },
-  text: {
-    fontSize: 18,
-    fontWeight: "700",
+  searchBar: {
     color: colors.white,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "600",
-    marginVertical: 15,
+    flex: 0.8,
+    fontFamily: "Poppins_400Regular",
   },
   toDoContainer: {
     width: "100%",

@@ -27,7 +27,6 @@ export default function LoginPage({ navigation }) {
   const [showPasswordSignUp, setShowPasswordSignUp] = useState(0);
 
   useEffect(() => {
-    console.log("");
     async function getUsers() {
       const user = await axios("https://jsonplaceholder.typicode.com/users");
       setUsers([...user.data]);
@@ -45,7 +44,7 @@ export default function LoginPage({ navigation }) {
   };
 
   return (
-    <ScrollView style={{ height: "100%" }}>
+    <ScrollView style={styles.scrollView}>
       <View style={[styles.container, { height: height * 1.05 }]}>
         <View style={styles.upperSphere}></View>
         <View style={styles.lowerSphere}></View>
@@ -60,7 +59,7 @@ export default function LoginPage({ navigation }) {
                 LOGIN
               </AppText>
             </Pressable>
-            <AppText style={{ flex: 8 }}></AppText>
+            <AppText style={styles.expander}></AppText>
             <Pressable onPress={() => switchTab(1)}>
               <AppText
                 style={
@@ -78,9 +77,7 @@ export default function LoginPage({ navigation }) {
                 setValue={setLoginEmail}
                 value={loginEmail}
                 placeholder="Email"
-                style={{
-                  marginVertical: 10,
-                }}
+                style={styles.inputLogin}
               />
               <AppTextField
                 type={showPasswordLogin === 0 ? "password" : "text"}
@@ -88,9 +85,7 @@ export default function LoginPage({ navigation }) {
                 setValue={setLoginPassword}
                 value={loginPassword}
                 placeholder="Password"
-                style={{
-                  marginVertical: 10,
-                }}
+                style={styles.inputLogin}
                 onPressIcon={() => showPasswordCall("Login")}
               />
               <AppText style={styles.forgetPass}>Forgot Password?</AppText>
@@ -128,9 +123,7 @@ export default function LoginPage({ navigation }) {
                 setValue={setSignUpEmail}
                 value={signUpEmail}
                 placeholder="Email"
-                style={{
-                  marginVertical: 10,
-                }}
+                style={styles.inputLogin}
               />
               <AppTextField
                 type={showPasswordSignUp === 0 ? "password" : "text"}
@@ -138,9 +131,7 @@ export default function LoginPage({ navigation }) {
                 setValue={setSignUpPassword}
                 value={signUpPassword}
                 placeholder="Password"
-                style={{
-                  marginVertical: 10,
-                }}
+                style={styles.inputLogin}
                 onPressIcon={() => showPasswordCall("SignUp")}
               />
               <AppTextField
@@ -148,9 +139,7 @@ export default function LoginPage({ navigation }) {
                 setValue={setSignUpOTP}
                 value={signUpOTP}
                 placeholder="OTP"
-                style={{
-                  marginVertical: 10,
-                }}
+                style={styles.inputLogin}
               />
               <AppButton
                 style={styles.loginButton}
@@ -204,12 +193,16 @@ const styles = StyleSheet.create({
   },
   currentTabText: {
     fontSize: 24,
-    fontWeight: "700",
+    fontFamily: "Poppins_700Bold",
   },
+  inputLogin: {
+    marginVertical: 10,
+  },
+  expander: { flex: 8 },
   forgetPass: {
     marginVertical: 20,
     color: colors.grey,
-    fontWeight: "500",
+    fontFamily: "Poppins_500Medium",
   },
   header: {
     flexDirection: "row",
@@ -231,9 +224,10 @@ const styles = StyleSheet.create({
   },
   nextTabText: {
     fontSize: 18,
-    fontWeight: "500",
+    fontFamily: "Poppins_500Medium",
     color: colors.grey,
   },
+  scrollView: { height: "100%" },
   upperSphere: {
     width: "100%",
     height: 250,

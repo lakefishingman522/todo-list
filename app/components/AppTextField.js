@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TextInput, View } from "react-native";
+import { StyleSheet, TextInput, View } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useFonts, Poppins_700Bold } from "@expo-google-fonts/poppins";
 
@@ -23,13 +23,10 @@ function AppTextField({
     return (
       <View
         style={[
+          styles.container,
           {
-            paddingHorizontal: 20,
-            paddingVertical: 18,
-            flexDirection: "row",
             backgroundColor: backgroundcolor,
             elevation: elevation,
-            borderRadius: 5,
           },
           style,
         ]}
@@ -42,12 +39,7 @@ function AppTextField({
         />
         <TextInput
           secureTextEntry={type === "password" ? true : false}
-          style={{
-            marginLeft: 20,
-            flex: 1,
-            fontFamily: "Poppins_700Bold",
-            fontSize: 16,
-          }}
+          style={styles.input}
           placeholder={placeholder}
           placeholderTextColor={colors.grey}
           onFocus={() => {
@@ -62,5 +54,20 @@ function AppTextField({
       </View>
     );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    flexDirection: "row",
+    borderRadius: 5,
+  },
+  input: {
+    marginLeft: 20,
+    flex: 1,
+    fontFamily: "Poppins_700Bold",
+    fontSize: 16,
+  },
+});
 
 export default AppTextField;
