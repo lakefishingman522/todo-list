@@ -27,8 +27,8 @@ export default function AppToDoList({
       }
     : { backgroundColor: "red" };
 
-  let time = data.date.slice(16, 21);
-  let date = data.date.slice(0, 15);
+  let time = data.date.toString().slice(0, 24).slice(16, 21);
+  let date = data.date.toString().slice(0, 24).slice(0, 15);
 
   // Slide To Delete
   const translateX = useSharedValue(0);

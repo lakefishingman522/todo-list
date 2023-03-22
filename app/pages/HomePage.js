@@ -1,5 +1,5 @@
 // Default or Third Party Library Imports
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   Platform,
   StyleSheet,
@@ -15,8 +15,10 @@ import {
 } from "react-native";
 import { FontAwesome, AntDesign } from "@expo/vector-icons";
 import {
+  GestureDetector,
   GestureHandlerRootView,
   PanGestureHandler,
+  TapGestureHandler,
 } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -26,9 +28,12 @@ import Animated, {
   withTiming,
   Easing,
   useAnimatedStyle,
+  color,
 } from "react-native-reanimated";
 import "react-native-reanimated";
 import { useFonts, Poppins_400Regular } from "@expo-google-fonts/poppins";
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 // Custom Imports
 import colors from "../config/colors";
@@ -37,7 +42,7 @@ import AppToDoList from "../components/AppToDoList";
 import AppBar from "../components/AppBar";
 import AppIcon from "../components/AppIcon";
 import AppButton from "../components/AppButton";
-import search from "../config/search";
+import { search, deleteItem } from "../config/utilities";
 import AppSliderBottomNavBar from "../components/AppSliderBottomNavBar";
 import AppRow from "../components/AppRow";
 import AppChip from "../components/AppChip";
@@ -46,34 +51,93 @@ import AppText from "../components/AppText";
 import AppSizedBox from "../components/AppSizedBox";
 import AppLine from "../components/AppLine";
 
-//Custom Hook
-function useTodos(todos) {
-  let total = 0,
-    completed = 0,
-    pending = 0;
+//Util for Search
+let todosForSearch = {};
+let tab = 0;
 
-  todos.filter((todo) => {
-    total++;
+//Tab Navigator
+const Tab = createMaterialTopTabNavigator();
 
-    if (todo.completed) completed++;
-    else pending++;
-  });
+//Reducer Function
+function reducer(state, action) {
+  switch (action.type) {
+    case "setTodos": {
+      return {
+        ...state,
+        completed: action.completed,
+        pending: action.pending,
+      };
+    }
 
-  return [total, completed, pending];
+    case "addTodo": {
+      return {
+        ...state,
+        pending: [action.todo, ...state.pending],
+      };
+    }
+
+    case "deleteTodo": {
+      if (action.todo.completed) {
+        if (tab)
+          todosForSearch.completed = deleteItem(
+            todosForSearch.completed,
+            action.todo
+          );
+        return {
+          ...state,
+          completed: deleteItem(state.completed, action.todo),
+        };
+      } else {
+        if (!tab)
+          todosForSearch.pending = deleteItem(
+            todosForSearch.pending,
+            action.todo
+          );
+        return {
+          ...state,
+          pending: deleteItem(state.pending, action.todo),
+        };
+      }
+    }
+
+    case "markTodo": {
+      action.todo.completed = !action.todo.completed;
+      if (!action.todo.completed) {
+        todosForSearch = {
+          completed: deleteItem(todosForSearch.completed, action.todo),
+          pending: [action.todo, ...todosForSearch.pending],
+        };
+        return {
+          ...state,
+          completed: deleteItem(state.completed, action.todo),
+          pending: [action.todo, ...state.pending],
+        };
+      } else {
+        todosForSearch = {
+          pending: deleteItem(todosForSearch.pending, action.todo),
+          completed: [action.todo, ...todosForSearch.completed],
+        };
+        return {
+          ...state,
+          pending: deleteItem(state.pending, action.todo),
+          completed: [action.todo, ...state.completed],
+        };
+      }
+    }
+
+    default:
+      break;
+  }
 }
-
-let todosForSearch = [];
 
 export default function HomePage({ route, navigation }) {
   //States
   const { height, width } = useWindowDimensions();
   const [taskInputController, settaskInputController] = useState("");
   const [taskSearch, settaskSearch] = useState("");
-  const [todos, setTodos] = useState([]);
   const [fetching, setFetching] = useState(true);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [keyboardStatus, setKeyboardStatus] = useState(0);
-  const isAddOnFocus = useRef();
   const [bottomNavVisible, setBottomNavVisible] = useState(false);
   const [todoCategories, setTodoCategories] = useState([
     { id: 1, title: "Meeting", selected: false },
@@ -82,9 +146,32 @@ export default function HomePage({ route, navigation }) {
     { id: 4, title: "Design Project", selected: false },
   ]);
   const [editTodo, setEditTodo] = useState({});
+  const [todoObject, setTodoObject] = useState({});
   const [chipTextController, setChipTextController] = useState("");
+  const [calendarIconPress, setCalenderIconPress] = useState(false);
 
-  let [total, completed, pending] = useTodos(todos);
+  const isAddOnFocus = useRef();
+
+  const [state, dispatch] = useReducer(reducer, {
+    completed: [],
+    pending: [],
+  });
+
+  let markingDates = useMemo(() => {
+    return [...state.completed, ...state.pending].reduce((obj, item) => {
+      return {
+        ...obj,
+        [item.date.toISOString().slice(0, 10)]: {
+          selected: true,
+          marked: true,
+          selectedColor: item.completed ? "green" : "red",
+        },
+      };
+    }, {});
+  }, [state]);
+
+  let now = new Date().toDateString();
+
   //Font Importer
   let [fontsLoaded, error] = useFonts({
     Poppins_400Regular,
@@ -97,21 +184,30 @@ export default function HomePage({ route, navigation }) {
       const response = await axios(
         `https://jsonplaceholder.typicode.com/todos`
       );
-
-      let newTodos = response.data.filter((todo) => {
+      let completedTodos = [];
+      let pendingTodos = [];
+      response.data.filter((todo) => {
         if (todo.userId === userId) {
           let y = Math.random() * (1 - 0.996) + 0.996;
-          todo.date = new Date(Date.now() * y).toString().slice(0, 24);
-          return todo;
+          todo.date = new Date(Date.now() * y);
+          if (todo.completed) completedTodos.push(todo);
+          else pendingTodos.push(todo);
         }
       });
-      setTodos(newTodos);
-      todosForSearch = newTodos;
-      [total, completed, pending] = useTodos(todos);
+      dispatch({
+        type: "setTodos",
+        completed: completedTodos,
+        pending: pendingTodos,
+      });
+      todosForSearch = {
+        completed: completedTodos,
+        pending: pendingTodos,
+      };
       setFetching(false);
     }
 
     getTodos();
+    // console.log(todoObject.date.toString().slice(0, 24));
   }, []);
 
   //Event Listener for KeyBoard
@@ -132,71 +228,84 @@ export default function HomePage({ route, navigation }) {
   //Listener For Bottom Nav Bar
   useEffect(() => {
     if (fontsLoaded) {
-      if (bottomNavVisible) {
+      if (bottomNavVisible && !calendarIconPress) {
         isAddOnFocus.current.focus();
-      } else isAddOnFocus.current.blur();
+      } else {
+        isAddOnFocus.current.blur();
+        // if (!bottomNavVisible)
+      }
     }
   }, [bottomNavVisible]);
 
-  //Handlers
-  const onPressProfileIcon = () => {
-    [total, completed, pending] = useTodos(todos);
-    setProfileModalVisible(true);
-  };
+  //Listener For Going Back
+  useEffect(() => {
+    const sub = navigation.addListener("beforeRemove", (e) => {
+      if (bottomNavVisible) {
+        e.preventDefault();
+        translateY.value = withTiming(0, {
+          duration: 500,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        });
+        setBottomNavVisible(false);
+      }
+    });
 
+    return sub;
+  }, [navigation, bottomNavVisible]);
+
+  //Handlers
+  //Todos
+  const searchTodo = (newText) => {
+    settaskSearch(newText);
+    if (tab)
+      dispatch({
+        type: "setTodos",
+        completed: search(todosForSearch.completed, newText),
+        pending: state.pending,
+      });
+    else
+      dispatch({
+        type: "setTodos",
+        completed: state.completed,
+        pending: search(todosForSearch.pending, newText),
+      });
+  };
   const addTodo = () => {
     if (taskInputController.trim() === "") return;
     translateY.value = withTiming(0);
-    let newTodos = [
-      {
+
+    dispatch({
+      type: "addTodo",
+      todo: {
         userId: route.params.id,
         id: Math.random(),
         title: taskInputController.trim(),
         completed: false,
-        date: new Date().toString().slice(0, 24),
+        date: new Date(),
       },
-      ...todos,
-    ];
+    });
 
     settaskInputController("");
-    setTodos(newTodos);
-    todosForSearch = newTodos;
     setBottomNavVisible(false);
   };
 
-  const closeProfileView = () => setProfileModalVisible(false);
+  //Profile Model
+  const openProfileModel = () => setProfileModalVisible(true);
 
-  const deletetodo = (item) => {
-    let newTodos = todos.filter((todo) => {
-      if (todo.id != item.id) return todo;
-    });
-
-    setTodos(newTodos);
-  };
-
-  const markCompletedOnToDo = (item) => {
-    let newTodos = todos.filter((todo) => {
-      if (todo.id == item.id) todo.completed = !todo.completed;
-
-      return todo;
-    });
-
-    setTodos(newTodos);
-  };
+  const closeProfileModel = () => setProfileModalVisible(false);
 
   const profileModelReqClose = () => setToDoModalVisible(!profileModalVisible);
 
+  //Calendar Todo Shower
+  const closeDetailedView = () => setTodoObject({});
+
+  //Chips in Bottom Nav
   const chipModelReqClose = () => {
     if (editTodo.title.trim() === "") {
-      ToastAndroid.show("-Enter Chip Name", ToastAndroid.SHORT);
+      ToastAndroid.show("Enter Chip Name", ToastAndroid.SHORT);
       return;
     }
     setEditTodo({});
-  };
-
-  const searchTodo = (newText) => {
-    settaskSearch(newText);
-    setTodos(search(todosForSearch, newText));
   };
 
   const editChipOnLongPress = (id) =>
@@ -251,6 +360,7 @@ export default function HomePage({ route, navigation }) {
     },
   });
 
+  //Chips Gestures
   const translateX = useSharedValue(0);
   const panGestureEventChips = useAnimatedGestureHandler({
     onStart: (event, context) => {
@@ -274,147 +384,171 @@ export default function HomePage({ route, navigation }) {
   if (fontsLoaded)
     return (
       <GestureHandlerRootView style={styles.container}>
-        <View style={styles.toDoContainer}>
-          <AppBar
-            size={30}
-            name={"search1"}
-            iconColor="white"
-            barStyle={[
-              styles.appBarStyle,
-              keyboardStatus ? { height: "11.8%" } : {},
-            ]}
-          >
-            <View style={styles.viewHeader}>
-              <TextInput
-                style={styles.searchBar}
-                onChangeText={(newText) => searchTodo(newText)}
-                value={taskSearch}
-                placeholder={"Search..."}
-                placeholderTextColor={"#FFFFF0"}
+        <TapGestureHandler
+          onBegan={() => {
+            if (bottomNavVisible) {
+              translateY.value = withTiming(0, {
+                duration: 500,
+                easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+              });
+              setBottomNavVisible(false);
+              setCalenderIconPress(false);
+            }
+          }}
+        >
+          <View style={styles.toDoContainer}>
+            <AppRow
+              alignSelf="flex-start"
+              justifyContent="space-between"
+              alignItems="center"
+              style={{
+                marginTop: 16,
+                width: width * 0.9,
+                marginHorizontal: 20,
+              }}
+            >
+              <View>
+                <AppText
+                  style={{ fontFamily: "Poppins_700Bold", fontSize: 32 }}
+                >
+                  Today
+                </AppText>
+                <AppText style={{ fontFamily: "Poppins_300Light" }}>
+                  {now}
+                </AppText>
+              </View>
+              <MaterialCommunityIcons
+                name="calendar-month-outline"
+                size={32}
+                color="black"
+                disabled={bottomNavVisible}
+                onPress={() => {
+                  setBottomNavVisible(true);
+                  setCalenderIconPress(true);
+                  translateY.value = withTiming(height * -0.675, {
+                    duration: 500,
+                    easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+                  });
+                }}
               />
-              {keyboardStatus || taskSearch != "" ? (
-                <AppSizedBox width={30} height={20}>
-                  <AntDesign
-                    name="close"
-                    onPress={() => {
-                      settaskSearch("");
-                      setTodos(search(todosForSearch, ""));
-                    }}
-                    color={colors.white}
-                    size={20}
-                  />
-                </AppSizedBox>
-              ) : (
-                <AppSizedBox width={20} height={20} />
-              )}
-              <AppIcon
-                name="user"
-                size={50}
-                iconColor={colors.primary}
-                backgroundColor={colors.white}
-                onPress={onPressProfileIcon}
-              />
-            </View>
-          </AppBar>
-          <Modal
-            animationType="fade"
-            transparent={true}
-            visible={profileModalVisible}
-            onRequestClose={profileModelReqClose}
-          >
-            <View
-              style={[
-                styles.centeredView,
-                {
-                  justifyContent: "flex-start",
-                  alignItems: "flex-end",
-                  marginTop: height * 0.09,
-                },
+            </AppRow>
+            <AppBar
+              size={30}
+              name={"search1"}
+              iconColor="white"
+              barStyle={[
+                styles.appBarStyle,
+                keyboardStatus ? { height: "11.8%" } : {},
               ]}
             >
-              <View
-                style={[styles.profileTriangle, { marginRight: width * 0.11 }]}
-              />
-              <View
-                style={[
-                  styles.modalView,
-                  {
-                    width: width * 0.9,
-                    alignSelf: "center",
-                  },
-                ]}
-              >
-                <AppRow justifyContent="space-between">
-                  <AppText style={styles.modalText}>
-                    Hi!! {route.params.name}
-                  </AppText>
-                  <FontAwesome
-                    onPress={closeProfileView}
-                    name="close"
-                    size={25}
-                    color={colors.black}
-                  />
-                </AppRow>
-
-                <AppRow justifyContent="space-between">
-                  <AppText style={styles.analysisBar}>Completed</AppText>
-                  <AppText style={styles.analysisBar}>Pending</AppText>
-                </AppRow>
-
-                <AppRow>
-                  <View
-                    style={[styles.completedBar, { flex: completed / total }]}
-                  >
-                    <AppText style={styles.completedText}>{completed}</AppText>
-                  </View>
-                  <View
-                    style={[styles.pendingBar, { flex: 1 - completed / total }]}
-                  >
-                    <AppText style={styles.pendingText}>{pending}</AppText>
-                  </View>
-                </AppRow>
-
-                <AppButton
-                  onPress={navigation.goBack}
-                  style={[
-                    styles.closeModalBtn,
-                    { width: "30%", marginTop: 20 },
-                  ]}
-                  title="Log Out"
+              <View style={styles.viewHeader}>
+                <TextInput
+                  style={styles.searchBar}
+                  onChangeText={(newText) => searchTodo(newText)}
+                  value={taskSearch}
+                  placeholder={"Search..."}
+                  placeholderTextColor={"#FFFFF0"}
+                />
+                {(keyboardStatus || taskSearch != "") &&
+                !isAddOnFocus.current.isFocused() ? (
+                  <AppSizedBox width={30} height={20}>
+                    <AntDesign
+                      name="close"
+                      onPress={() => {
+                        searchTodo("");
+                      }}
+                      color={colors.white}
+                      size={20}
+                    />
+                  </AppSizedBox>
+                ) : (
+                  <AppSizedBox width={20} height={20} />
+                )}
+                <AppIcon
+                  name="user"
+                  size={50}
+                  iconColor={colors.primary}
+                  backgroundColor={colors.white}
+                  onPress={openProfileModel}
                 />
               </View>
-            </View>
-          </Modal>
-          {todos.length !== 0 ? (
-            <FlatList
-              refreshing={fetching}
-              onRefresh={() => {
-                setFetching(false);
-                setTodos([...todos]);
-                setFetching(false);
+            </AppBar>
+            <View
+              style={{
+                width: width,
+                height: height * 0.69,
               }}
-              style={!keyboardStatus ? { marginBottom: height * 0.09 } : {}}
-              data={todos}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => {
-                return (
-                  <AppToDoList
-                    key={item.id}
-                    onPressCheckBox={() => markCompletedOnToDo(item)}
-                    onPressCross={() => deletetodo(item)}
-                    data={item}
-                  />
-                );
-              }}
-            />
-          ) : (
-            <View style={styles.mainContent}>
-              <AppText style={styles.loading}>
-                {!fetching ? "No Todos Match" : "Loading..."}
-              </AppText>
+            >
+              <Tab.Navigator
+                style={{
+                  flexDirection: "column",
+                  backgroundColor: "#f8f4f4",
+                  justifyContent: "space-between",
+                }}
+                screenOptions={{
+                  tabBarStyle: {
+                    backgroundColor: "#f8f4f4",
+                    fontFamily: "Poppins_400Regular",
+                    fontSize: 24,
+                  },
+
+                  tabBarIndicatorStyle: {
+                    backgroundColor: colors.secondary,
+                  },
+                }}
+              >
+                <Tab.Screen
+                  name="Pending"
+                  children={() => {
+                    return (
+                      <PopulateTodos
+                        navigation={navigation}
+                        todos={state.pending}
+                        fetching={fetching}
+                        setFetching={(newValue) => setFetching(newValue)}
+                        deletetodo={(item) => {
+                          dispatch({ type: "deleteTodo", todo: item });
+                        }}
+                        markCompletedOnToDo={(item) => {
+                          dispatch({ type: "markTodo", todo: item });
+                        }}
+                      />
+                    );
+                  }}
+                  listeners={({ navigation, route }) => ({
+                    focus: (e) => {
+                      tab = 0;
+                    },
+                  })}
+                />
+                <Tab.Screen
+                  name="Completed"
+                  children={() => {
+                    return (
+                      <PopulateTodos
+                        navigation={navigation}
+                        todos={state.completed}
+                        fetching={fetching}
+                        setFetching={(newValue) => setFetching(newValue)}
+                        deletetodo={(item) => {
+                          dispatch({ type: "deleteTodo", todo: item });
+                        }}
+                        markCompletedOnToDo={(item) => {
+                          dispatch({ type: "markTodo", todo: item });
+                        }}
+                      />
+                    );
+                  }}
+                  listeners={({ navigation, route }) => ({
+                    focus: (e) => {
+                      tab = 1;
+                    },
+                  })}
+                />
+              </Tab.Navigator>
             </View>
-          )}
-        </View>
+          </View>
+        </TapGestureHandler>
         <AppSliderBottomNavBar
           translateY={translateY}
           panGestureEvent={panGestureEvent}
@@ -494,7 +628,25 @@ export default function HomePage({ route, navigation }) {
                   marginVertical: 20,
                 }}
               >
-                <Calendar />
+                <Calendar
+                  markedDates={markingDates}
+                  onDayPress={(DateData) => {
+                    let todo;
+                    for (const iterator of [
+                      ...state.completed,
+                      ...state.pending,
+                    ]) {
+                      if (
+                        iterator.date.toISOString().slice(0, 10) ===
+                        DateData.dateString
+                      ) {
+                        todo = iterator;
+                        break;
+                      }
+                    }
+                    setTodoObject({ ...todo });
+                  }}
+                />
               </View>
               <AppLine />
             </View>
@@ -547,18 +699,186 @@ export default function HomePage({ route, navigation }) {
                 </View>
               </View>
             </Modal>
+            {JSON.stringify(todoObject) !== "{}" ? (
+              <Modal
+                animationType="slide"
+                transparent={true}
+                visible={JSON.stringify(todoObject) !== "{}"}
+                onRequestClose={closeDetailedView}
+              >
+                <View style={styles.centeredView}>
+                  <View style={styles.modalView}>
+                    <React.Fragment>
+                      <TodoModelRowComponent
+                        heading={"Title"}
+                        value={todoObject.title}
+                      />
+                      <TodoModelRowComponent
+                        heading={"Date"}
+                        value={todoObject.date.toString().slice(0, 24)}
+                      />
+                      <TodoModelRowComponent
+                        heading={"Status"}
+                        value={todoObject.completed ? "Completed" : "Pending"}
+                      />
+                      <AppButton
+                        onPress={closeDetailedView}
+                        style={styles.closeModalBtn}
+                        title="Close"
+                      />
+                    </React.Fragment>
+                  </View>
+                </View>
+              </Modal>
+            ) : null}
           </View>
         </AppSliderBottomNavBar>
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={profileModalVisible}
+          onRequestClose={profileModelReqClose}
+        >
+          <View
+            style={[
+              styles.centeredView,
+              {
+                justifyContent: "flex-start",
+                alignItems: "flex-end",
+                marginTop: height * 0.09,
+              },
+            ]}
+          >
+            <View
+              style={[styles.profileTriangle, { marginRight: width * 0.11 }]}
+            />
+            <View
+              style={[
+                styles.modalView,
+                {
+                  width: width * 0.9,
+                  alignSelf: "center",
+                },
+              ]}
+            >
+              <AppRow justifyContent="space-between">
+                <AppText style={styles.modalText}>
+                  Hi!! {route.params.name}
+                </AppText>
+                <FontAwesome
+                  onPress={closeProfileModel}
+                  name="close"
+                  size={25}
+                  color={colors.black}
+                />
+              </AppRow>
+
+              <AppRow justifyContent="space-between">
+                <AppText style={styles.analysisBar}>Completed</AppText>
+                <AppText style={styles.analysisBar}>Pending</AppText>
+              </AppRow>
+
+              <AppRow>
+                <View
+                  style={[
+                    styles.completedBar,
+                    {
+                      flex:
+                        state.completed.length /
+                        (state.completed.length + state.pending.length),
+                    },
+                  ]}
+                >
+                  <AppText style={styles.completedText}>
+                    {state.completed.length}
+                  </AppText>
+                </View>
+                <View
+                  style={[
+                    styles.pendingBar,
+                    {
+                      flex:
+                        state.pending.length /
+                        (state.completed.length + state.pending.length),
+                    },
+                  ]}
+                >
+                  <AppText style={styles.pendingText}>
+                    {state.pending.length}
+                  </AppText>
+                </View>
+              </AppRow>
+
+              <AppButton
+                onPress={navigation.goBack}
+                style={[styles.closeModalBtn, { width: "30%", marginTop: 20 }]}
+                title="Log Out"
+              />
+            </View>
+          </View>
+        </Modal>
       </GestureHandlerRootView>
     );
+}
+
+//Util Component
+function PopulateTodos({
+  todos = [],
+  fetching,
+  setFetching,
+  markCompletedOnToDo,
+  deletetodo,
+}) {
+  return todos.length !== 0 ? (
+    <FlatList
+      refreshing={fetching}
+      onRefresh={() => {
+        setFetching(true);
+        // setTodos([...todos]);
+        setFetching(false);
+      }}
+      data={todos}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => {
+        return (
+          <AppToDoList
+            key={item.id}
+            onPressCheckBox={() => markCompletedOnToDo(item)}
+            onPressCross={() => deletetodo(item)}
+            data={item}
+          />
+        );
+      }}
+    />
+  ) : (
+    <View style={styles.mainContent}>
+      <AppText style={styles.loading}>
+        {!fetching ? "No Todos Match" : "Loading..."}
+      </AppText>
+    </View>
+  );
+}
+
+function TodoModelRowComponent({ heading, value }) {
+  return (
+    <View
+      style={{ flexDirection: "row", alignItems: "flex-start", width: "90%" }}
+    >
+      <AppText style={{ fontFamily: "Poppins_700Bold", fontSize: 16 }}>
+        {heading} :{" "}
+      </AppText>
+      <AppText style={{ fontSize: 16 }}>{value}</AppText>
+    </View>
+  );
 }
 
 // StyleSheet
 const styles = StyleSheet.create({
   analysisBar: { fontSize: 15, fontFamily: "Poppins_600SemiBold" },
   addBar: {
+    width: "100%",
     color: colors.white,
-    marginHorizontal: 20,
+    marginLeft: 20,
     marginTop: 20,
     fontSize: 25,
     alignSelf: "flex-start",
@@ -568,6 +888,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     marginTop: 10,
     marginHorizontal: 24,
+    marginBottom: 10,
     borderRadius: 50,
     overflow: "hidden",
   },
@@ -636,7 +957,7 @@ const styles = StyleSheet.create({
   },
   completedText: { paddingHorizontal: 8, color: colors.white },
   container: {
-    flex: 1,
+    // flex: 1,
     backgroundColor: "#f8f4f4",
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
     alignItems: "center",
@@ -713,7 +1034,6 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     height: "100%",
-    justifyContent: "flex-end",
   },
   viewHeader: {
     flexDirection: "row",

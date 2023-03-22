@@ -1,3 +1,4 @@
+// Default or Third Party Library Imports
 import React, { useEffect, useState } from "react";
 import {
   useWindowDimensions,
@@ -7,6 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 
+// Custom Imports
 import AppTextField from "../components/AppTextField";
 import AppButton from "../components/AppButton";
 import colors from "../config/colors";
@@ -15,6 +17,7 @@ import { Pressable } from "react-native";
 import AppText from "../components/AppText";
 
 export default function LoginPage({ navigation }) {
+  //States
   const { height, width } = useWindowDimensions();
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -26,6 +29,7 @@ export default function LoginPage({ navigation }) {
   const [showPasswordLogin, setShowPasswordLogin] = useState(0);
   const [showPasswordSignUp, setShowPasswordSignUp] = useState(0);
 
+  //Get Users
   useEffect(() => {
     async function getUsers() {
       const user = await axios("https://jsonplaceholder.typicode.com/users");
@@ -34,6 +38,7 @@ export default function LoginPage({ navigation }) {
     getUsers();
   }, []);
 
+  //Handlers
   const switchTab = (tab) => {
     setCurrentTab(tab);
   };
@@ -175,6 +180,7 @@ export default function LoginPage({ navigation }) {
   );
 }
 
+//StyleSheet
 const styles = StyleSheet.create({
   card: {
     flexDirection: "column",
