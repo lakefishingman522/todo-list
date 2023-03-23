@@ -29,6 +29,7 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   color,
+  withDecay,
 } from "react-native-reanimated";
 import "react-native-reanimated";
 import { useFonts, Poppins_400Regular } from "@expo-google-fonts/poppins";
@@ -232,7 +233,7 @@ export default function HomePage({ route, navigation }) {
         isAddOnFocus.current.focus();
       } else {
         isAddOnFocus.current.blur();
-        // if (!bottomNavVisible)
+        if (!bottomNavVisible) setCalenderIconPress(false);
       }
     }
   }, [bottomNavVisible]);
@@ -254,6 +255,7 @@ export default function HomePage({ route, navigation }) {
   }, [navigation, bottomNavVisible]);
 
   //Handlers
+
   //Todos
   const searchTodo = (newText) => {
     settaskSearch(newText);
@@ -308,8 +310,14 @@ export default function HomePage({ route, navigation }) {
     setEditTodo({});
   };
 
-  const editChipOnLongPress = (id) =>
-    setEditTodo({ ...todoCategories[id - 1] });
+  const editChipOnLongPress = (id) => {
+    for (const iterator of todoCategories) {
+      if (id === iterator.id) {
+        setEditTodo(iterator);
+        return;
+      }
+    }
+  };
 
   const saveChipChange = (newTitle) => {
     if (newTitle.trim() === "") {
@@ -323,19 +331,38 @@ export default function HomePage({ route, navigation }) {
   };
 
   const selectChip = (id) => {
-    todoCategories[id - 1].selected = !todoCategories[id - 1].selected;
-    setTodoCategories([...todoCategories]);
+    setTodoCategories(
+      todoCategories.filter((item) => {
+        if (item.id === id) {
+          item.selected = !item.selected;
+        }
+        return item;
+      })
+    );
   };
 
   const createNewChip = () => {
     let newTodo = {
-      id: todoCategories.length + 1,
+      id: todoCategories.length
+        ? todoCategories[todoCategories.length - 1].id + 1
+        : 1,
       title: "",
       selected: true,
     };
     setTodoCategories([...todoCategories, newTodo]);
     setEditTodo({ ...newTodo });
   };
+
+  const deleteChip = () => {
+    setTodoCategories(
+      todoCategories.filter((item) => {
+        if (item.id !== editTodo.id) return item;
+      })
+    );
+    chipModelReqClose();
+  };
+
+  //Gesture Handlers
 
   //Bottom NavBar Gesture
   const translateY = useSharedValue(0);
@@ -361,19 +388,20 @@ export default function HomePage({ route, navigation }) {
   });
 
   //Chips Gestures
-  const translateX = useSharedValue(0);
+  const translateX = useSharedValue(200);
+  const newBoxes = (todoCategories.length - 4) * 116;
   const panGestureEventChips = useAnimatedGestureHandler({
     onStart: (event, context) => {
       context.startX = translateX.value;
     },
     onActive: (event, context) => {
-      // if (event.translationX + context.startX > 0)
-      translateX.value = event.translationX + context.startX;
+      if (
+        event.translationX + context.startX > 0 - newBoxes &&
+        event.translationX + context.startX < 210
+      )
+        translateX.value = event.translationX + context.startX;
     },
-    onEnd: () => {
-      console.log(translateX.value);
-      // translateX.value = withSpring(0);
-    },
+    onEnd: (event) => {},
   });
   const animatedStyleChips = useAnimatedStyle(() => {
     return {
@@ -455,7 +483,7 @@ export default function HomePage({ route, navigation }) {
                     <AntDesign
                       name="close"
                       onPress={() => {
-                        searchTodo("");
+                        if (taskSearch !== "") searchTodo("");
                       }}
                       color={colors.white}
                       size={20}
@@ -519,6 +547,9 @@ export default function HomePage({ route, navigation }) {
                     focus: (e) => {
                       tab = 0;
                     },
+                    blur: (e) => {
+                      searchTodo("");
+                    },
                   })}
                 />
                 <Tab.Screen
@@ -542,6 +573,16 @@ export default function HomePage({ route, navigation }) {
                   listeners={({ navigation, route }) => ({
                     focus: (e) => {
                       tab = 1;
+                    },
+                    blur: (e) => {
+                      searchTodo("");
+                      if (bottomNavVisible) {
+                        translateY.value = withTiming(0, {
+                          duration: 500,
+                          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+                        });
+                        setBottomNavVisible(false);
+                      }
                     },
                   })}
                 />
@@ -591,6 +632,7 @@ export default function HomePage({ route, navigation }) {
                   style={[
                     {
                       justifyContent: "flex-start",
+                      alignItems: "center",
                       flexDirection: "row",
                       width: width * 2,
                       marginHorizontal: 18,
@@ -603,15 +645,21 @@ export default function HomePage({ route, navigation }) {
                     animatedStyleChips,
                   ]}
                 >
-                  {todoCategories.map((category) => (
-                    <Pressable
-                      key={category.id}
-                      onPress={() => selectChip(category.id)}
-                      onLongPress={() => editChipOnLongPress(category.id)}
-                    >
-                      <AppChip data={category} />
-                    </Pressable>
-                  ))}
+                  {todoCategories.length ? (
+                    todoCategories.map((category, index) => (
+                      <Pressable
+                        key={category.id}
+                        onPress={() => selectChip(category.id)}
+                        onLongPress={() => editChipOnLongPress(category.id)}
+                      >
+                        <AppChip data={category} />
+                      </Pressable>
+                    ))
+                  ) : (
+                    <AppText style={{ color: colors.white }}>
+                      Create A Chip
+                    </AppText>
+                  )}
                   <AppIcon
                     name="plus"
                     size={42}
@@ -629,6 +677,7 @@ export default function HomePage({ route, navigation }) {
                 }}
               >
                 <Calendar
+                  style={{ borderRadius: 20, overflow: "hidden" }}
                   markedDates={markingDates}
                   onDayPress={(DateData) => {
                     let todo;
@@ -690,6 +739,11 @@ export default function HomePage({ route, navigation }) {
                         title="Close"
                       />
                       <AppButton
+                        onPress={deleteChip}
+                        style={styles.chipModelSave}
+                        title="Delete"
+                      />
+                      <AppButton
                         onPress={() => saveChipChange(chipTextController)}
                         style={styles.chipModelSave}
                         title="Save"
@@ -745,7 +799,7 @@ export default function HomePage({ route, navigation }) {
               {
                 justifyContent: "flex-start",
                 alignItems: "flex-end",
-                marginTop: height * 0.09,
+                marginTop: height * 0.205,
               },
             ]}
           >
@@ -769,6 +823,11 @@ export default function HomePage({ route, navigation }) {
                   onPress={closeProfileModel}
                   name="close"
                   size={25}
+                  style={{
+                    paddingLeft: 20,
+                    paddingRight: 10,
+                    paddingBottom: 20,
+                  }}
                   color={colors.black}
                 />
               </AppRow>
@@ -779,34 +838,38 @@ export default function HomePage({ route, navigation }) {
               </AppRow>
 
               <AppRow>
-                <View
-                  style={[
-                    styles.completedBar,
-                    {
-                      flex:
-                        state.completed.length /
-                        (state.completed.length + state.pending.length),
-                    },
-                  ]}
-                >
-                  <AppText style={styles.completedText}>
-                    {state.completed.length}
-                  </AppText>
-                </View>
-                <View
-                  style={[
-                    styles.pendingBar,
-                    {
-                      flex:
-                        state.pending.length /
-                        (state.completed.length + state.pending.length),
-                    },
-                  ]}
-                >
-                  <AppText style={styles.pendingText}>
-                    {state.pending.length}
-                  </AppText>
-                </View>
+                {state.completed.length ? (
+                  <View
+                    style={[
+                      styles.completedBar,
+                      {
+                        flex:
+                          state.completed.length /
+                          (state.completed.length + state.pending.length),
+                      },
+                    ]}
+                  >
+                    <AppText style={styles.completedText}>
+                      {state.completed.length}
+                    </AppText>
+                  </View>
+                ) : null}
+                {state.pending.length ? (
+                  <View
+                    style={[
+                      styles.pendingBar,
+                      {
+                        flex:
+                          state.pending.length /
+                          (state.completed.length + state.pending.length),
+                      },
+                    ]}
+                  >
+                    <AppText style={styles.pendingText}>
+                      {state.pending.length}
+                    </AppText>
+                  </View>
+                ) : null}
               </AppRow>
 
               <AppButton
@@ -822,6 +885,7 @@ export default function HomePage({ route, navigation }) {
 }
 
 //Util Component
+//For Tabs
 function PopulateTodos({
   todos = [],
   fetching,
@@ -853,12 +917,13 @@ function PopulateTodos({
   ) : (
     <View style={styles.mainContent}>
       <AppText style={styles.loading}>
-        {!fetching ? "No Todos Match" : "Loading..."}
+        {!fetching ? "No Todos Available" : "Loading..."}
       </AppText>
     </View>
   );
 }
 
+//Model Todo
 function TodoModelRowComponent({ heading, value }) {
   return (
     <View

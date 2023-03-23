@@ -1,5 +1,5 @@
 // Default or Third Party Library Imports
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   useWindowDimensions,
   View,
@@ -29,6 +29,9 @@ export default function LoginPage({ navigation }) {
   const [showPasswordLogin, setShowPasswordLogin] = useState(0);
   const [showPasswordSignUp, setShowPasswordSignUp] = useState(0);
 
+  const refLoginInput = useRef(null);
+  const refSignUpInput = useRef(null);
+
   //Get Users
   useEffect(() => {
     async function getUsers() {
@@ -55,7 +58,15 @@ export default function LoginPage({ navigation }) {
         <View style={styles.lowerSphere}></View>
         <View style={[styles.card, { top: height * 0.3, left: width * 0.075 }]}>
           <View style={styles.header}>
-            <Pressable onPress={() => switchTab(0)}>
+            <Pressable
+              onPress={() => {
+                if (signUpEmail !== "") setSignUpEmail("");
+                if (signUpPassword !== "") setSignUpPassword("");
+                if (signUpOTP !== "") setSignUpOTP("");
+
+                switchTab(0);
+              }}
+            >
               <AppText
                 style={
                   currentTab === 0 ? styles.currentTabText : styles.nextTabText
@@ -65,7 +76,14 @@ export default function LoginPage({ navigation }) {
               </AppText>
             </Pressable>
             <AppText style={styles.expander}></AppText>
-            <Pressable onPress={() => switchTab(1)}>
+            <Pressable
+              onPress={() => {
+                if (loginEmail !== "") setLoginEmail("");
+                if (loginPassword !== "") setLoginPassword("");
+
+                switchTab(1);
+              }}
+            >
               <AppText
                 style={
                   currentTab === 1 ? styles.currentTabText : styles.nextTabText
@@ -78,6 +96,7 @@ export default function LoginPage({ navigation }) {
           {currentTab === 0 ? (
             <View style={[styles.loginContainer]}>
               <AppTextField
+                ref={refLoginInput}
                 iconName="user"
                 setValue={setLoginEmail}
                 value={loginEmail}
@@ -124,6 +143,7 @@ export default function LoginPage({ navigation }) {
           ) : (
             <View style={styles.loginContainer}>
               <AppTextField
+                ref={refSignUpInput}
                 iconName="user"
                 setValue={setSignUpEmail}
                 value={signUpEmail}
@@ -150,28 +170,40 @@ export default function LoginPage({ navigation }) {
                 style={styles.loginButton}
                 title="Register"
                 onPress={() => {
-                  if (loginEmail.trim() === "") {
+                  if (signUpEmail.trim() === "") {
                     ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
                     return;
                   }
-                  if (loginPassword.trim() === "") {
+                  if (signUpPassword.trim() === "") {
                     ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
                     return;
                   }
 
-                  let ourUser = { name: "" };
-                  users.forEach((user) => {
-                    if (user.email === loginEmail) ourUser = user;
-                  });
-                  if (ourUser.name === "")
-                    ToastAndroid.show("Invalid Credenials", ToastAndroid.SHORT);
-                  else {
-                    setLoginEmail("");
-                    setLoginPassword("");
-                    navigation.navigate("HomePage", ourUser);
+                  let pattern = /^[\w\.]+@gmail\.com$/g;
+                  if (signUpEmail.match(pattern) === null) {
+                    ToastAndroid.show("Invalid Email", ToastAndroid.SHORT);
+                    return;
                   }
+
+                  let userName = signUpEmail.substring(
+                    0,
+                    signUpEmail.indexOf("@")
+                  );
+
+                  users.push({
+                    name: userName[0].toUpperCase() + userName.substring(1),
+                    email: signUpEmail,
+                    password: signUpPassword,
+                    userId: users.length + 1,
+                  });
+
+                  ToastAndroid.show(
+                    "Registeration Successful",
+                    ToastAndroid.SHORT
+                  );
+                  setCurrentTab(0);
                 }}
-              ></AppButton>
+              />
             </View>
           )}
         </View>

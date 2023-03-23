@@ -5,10 +5,7 @@ import AppText from "./AppText";
 
 function AppButton({ title, color = "primary", onPress, style }) {
   return (
-    <TouchableNativeFeedback
-      background={TouchableNativeFeedback.Ripple("#fff", true)}
-      onPress={onPress}
-    >
+    <TouchableNativeFeedback onPress={onPress}>
       <View style={[styles.button, { backgroundColor: colors[color] }, style]}>
         <AppText style={styles.title}>{title}</AppText>
       </View>

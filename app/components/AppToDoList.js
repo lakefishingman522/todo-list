@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Text } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 import colors from "../config/colors";
@@ -106,21 +106,23 @@ export default function AppToDoList({
               </AppRow>
             ) : null}
           </View>
-          <View style={styles.arrow}>
+          <Pressable
+            onPress={() => {
+              height.value = withTiming(height.value + extraHeight, {
+                duration: 400,
+              });
+              setterExtraHeight(extraHeight * -1);
+            }}
+            style={styles.arrow}
+          >
             <MaterialIcons
               name={
                 extraHeight > 0 ? "keyboard-arrow-down" : "keyboard-arrow-up"
               }
               size={24}
               color="black"
-              onPress={() => {
-                height.value = withTiming(height.value + extraHeight, {
-                  duration: 400,
-                });
-                setterExtraHeight(extraHeight * -1);
-              }}
             />
-          </View>
+          </Pressable>
         </Animated.View>
       </PanGestureHandler>
     </View>
@@ -130,10 +132,12 @@ export default function AppToDoList({
 const styles = StyleSheet.create({
   arrow: {
     width: 100,
-    height: 20,
+    height: 40,
     position: "absolute",
     bottom: 5,
-    left: "52%",
+    left: "40%",
+    alignItems: "center",
+    justifyContent: "flex-end",
   },
   button: {
     position: "absolute",
