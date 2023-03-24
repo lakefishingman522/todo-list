@@ -1,7 +1,6 @@
 import React from "react";
 import { View, StyleSheet, useWindowDimensions } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
-import colors from "../config/colors";
 
 export default function AppBar({
   barStyle,

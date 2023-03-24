@@ -15,7 +15,6 @@ import {
 } from "react-native";
 import { FontAwesome, AntDesign } from "@expo/vector-icons";
 import {
-  GestureDetector,
   GestureHandlerRootView,
   PanGestureHandler,
   TapGestureHandler,
@@ -28,13 +27,12 @@ import Animated, {
   withTiming,
   Easing,
   useAnimatedStyle,
-  color,
-  withDecay,
 } from "react-native-reanimated";
 import "react-native-reanimated";
 import { useFonts, Poppins_400Regular } from "@expo-google-fonts/poppins";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Custom Imports
 import colors from "../config/colors";
@@ -149,7 +147,6 @@ export default function HomePage({ route, navigation }) {
   const [editTodo, setEditTodo] = useState({});
   const [todoObject, setTodoObject] = useState({});
   const [chipTextController, setChipTextController] = useState("");
-  const [calendarIconPress, setCalenderIconPress] = useState(false);
 
   const isAddOnFocus = useRef();
 
@@ -229,11 +226,10 @@ export default function HomePage({ route, navigation }) {
   //Listener For Bottom Nav Bar
   useEffect(() => {
     if (fontsLoaded) {
-      if (bottomNavVisible && !calendarIconPress) {
+      if (bottomNavVisible) {
         isAddOnFocus.current.focus();
       } else {
         isAddOnFocus.current.blur();
-        if (!bottomNavVisible) setCalenderIconPress(false);
       }
     }
   }, [bottomNavVisible]);
@@ -420,7 +416,6 @@ export default function HomePage({ route, navigation }) {
                 easing: Easing.bezier(0.25, 0.1, 0.25, 1),
               });
               setBottomNavVisible(false);
-              setCalenderIconPress(false);
             }
           }}
         >
@@ -451,12 +446,12 @@ export default function HomePage({ route, navigation }) {
                 color="black"
                 disabled={bottomNavVisible}
                 onPress={() => {
-                  setBottomNavVisible(true);
-                  setCalenderIconPress(true);
-                  translateY.value = withTiming(height * -0.675, {
-                    duration: 500,
-                    easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-                  });
+                  navigation.navigate("AgendaPage");
+                  // setBottomNavVisible(true);
+                  // translateY.value = withTiming(height * -0.675, {
+                  //   duration: 500,
+                  //   easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+                  // });
                 }}
               />
             </AppRow>

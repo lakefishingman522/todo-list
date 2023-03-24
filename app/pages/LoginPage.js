@@ -7,14 +7,15 @@ import {
   ToastAndroid,
   ScrollView,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Custom Imports
 import AppTextField from "../components/AppTextField";
 import AppButton from "../components/AppButton";
 import colors from "../config/colors";
-import axios from "axios";
 import { Pressable } from "react-native";
 import AppText from "../components/AppText";
+// import axios from "axios";
 
 export default function LoginPage({ navigation }) {
   //States
@@ -35,15 +36,46 @@ export default function LoginPage({ navigation }) {
   //Get Users
   useEffect(() => {
     async function getUsers() {
-      const user = await axios("https://jsonplaceholder.typicode.com/users");
-      setUsers([...user.data]);
+      let tries = 3,
+        gotUsers = false;
+
+      // await AsyncStorage.clear();
+      while (tries--) {
+        await AsyncStorage.getItem("@Users_Array", (err, result) => {
+          if (err) return;
+          else {
+            if (result === null) setUsers([]);
+            else setUsers(JSON.parse(result).Users);
+            gotUsers = true;
+          }
+        });
+      }
+
+      if (!gotUsers) {
+        ToastAndroid.show(
+          "Somethong went wrong, Try Again Sometimes later",
+          ToastAndroid.SHORT
+        );
+      }
     }
     getUsers();
   }, []);
 
   //Handlers
   const switchTab = (tab) => {
-    setCurrentTab(tab);
+    if (tab != currentTab) {
+      if (tab) {
+        setLoginEmail("");
+        setLoginPassword("");
+        setShowPasswordLogin(0);
+      } else {
+        setSignUpEmail("");
+        setSignUpPassword("");
+        setSignUpOTP("");
+        setShowPasswordSignUp(0);
+      }
+      setCurrentTab(tab);
+    }
   };
 
   const showPasswordCall = (which) => {
@@ -128,13 +160,18 @@ export default function LoginPage({ navigation }) {
 
                   let ourUser = { name: "" };
                   users.forEach((user) => {
-                    if (user.email.toLowerCase() === loginEmail) ourUser = user;
+                    if (
+                      user.email.toLowerCase() === loginEmail &&
+                      user.password === loginPassword
+                    )
+                      ourUser = user;
                   });
                   if (ourUser.name === "")
                     ToastAndroid.show("Invalid Credenials", ToastAndroid.SHORT);
                   else {
                     setLoginEmail("");
                     setLoginPassword("");
+                    setShowPasswordLogin(0);
                     navigation.navigate("HomePage", ourUser);
                   }
                 }}
@@ -169,7 +206,7 @@ export default function LoginPage({ navigation }) {
               <AppButton
                 style={styles.loginButton}
                 title="Register"
-                onPress={() => {
+                onPress={async () => {
                   if (signUpEmail.trim() === "") {
                     ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
                     return;
@@ -178,6 +215,19 @@ export default function LoginPage({ navigation }) {
                     ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
                     return;
                   }
+
+                  let alreadyResgistered = false;
+                  for (const user of users) {
+                    if (user.email === signUpEmail) {
+                      ToastAndroid.show(
+                        "User Already Registered",
+                        ToastAndroid.SHORT
+                      );
+                      alreadyResgistered = true;
+                      break;
+                    }
+                  }
+                  if (alreadyResgistered) return;
 
                   let pattern = /^[\w\.]+@gmail\.com$/g;
                   if (signUpEmail.match(pattern) === null) {
@@ -190,18 +240,40 @@ export default function LoginPage({ navigation }) {
                     signUpEmail.indexOf("@")
                   );
 
-                  users.push({
+                  let newUser = {
                     name: userName[0].toUpperCase() + userName.substring(1),
-                    email: signUpEmail,
+                    email: signUpEmail.toLowerCase(),
                     password: signUpPassword,
-                    userId: users.length + 1,
-                  });
+                    userId: Math.random() * Math.random() + "" + Date.now(),
+                  };
+                  users.push(newUser);
 
-                  ToastAndroid.show(
-                    "Registeration Successful",
-                    ToastAndroid.SHORT
+                  const jsonValue = JSON.stringify({ Users: users });
+
+                  let error = false;
+                  await AsyncStorage.mergeItem(
+                    "@Users_Array",
+                    jsonValue,
+                    (err) => {
+                      if (err) {
+                        error = true;
+                        ToastAndroid.show(
+                          "Somethong went wrong, Try Again",
+                          ToastAndroid.SHORT
+                        );
+                        return;
+                      }
+                    }
                   );
-                  setCurrentTab(0);
+
+                  if (!error) {
+                    ToastAndroid.show(
+                      "Registeration Successful",
+                      ToastAndroid.SHORT
+                    );
+                    setUsers([...users]);
+                    switchTab(0);
+                  }
                 }}
               />
             </View>

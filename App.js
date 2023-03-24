@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 // Custom Imports
 import LoginPage from "./app/pages/LoginPage";
 import HomePage from "./app/pages/HomePage";
+import AgendaPage from "./app/pages/AgendaPage";
 
 //Creating Navigation Stack
 const { Navigator, Screen } = createNativeStackNavigator();
@@ -23,6 +24,14 @@ export default function NavigatorPage() {
         <Screen
           name="HomePage"
           component={HomePage}
+          options={{
+            headerShown: false,
+            animation: "flip",
+          }}
+        />
+        <Screen
+          name="AgendaPage"
+          component={AgendaPage}
           options={{
             headerShown: false,
             animation: "flip",

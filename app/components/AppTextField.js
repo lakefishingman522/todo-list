@@ -40,6 +40,7 @@ const AppTextField = forwardRef(
             name={iconName}
             color={colors.black}
             size={24}
+            style={{ paddingVertical: 20, paddingLeft: 20, paddingRight: 15 }}
           />
           <TextInput
             ref={ref}
@@ -62,13 +63,11 @@ const AppTextField = forwardRef(
 );
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-    paddingVertical: 18,
     flexDirection: "row",
     borderRadius: 5,
   },
   input: {
-    marginLeft: 20,
+    marginHorizontal: 8,
     flex: 1,
     fontFamily: "Poppins_700Bold",
     fontSize: 16,
