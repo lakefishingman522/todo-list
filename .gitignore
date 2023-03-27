@@ -9,6 +9,7 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 web-build/
+app/config/unUsedFunctions.js
 
 # macOS
 .DS_Store

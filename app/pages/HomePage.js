@@ -17,6 +17,7 @@ import { FontAwesome, AntDesign } from "@expo/vector-icons";
 import {
   GestureHandlerRootView,
   PanGestureHandler,
+  ScrollView,
   TapGestureHandler,
 } from "react-native-gesture-handler";
 import Animated, {
@@ -27,12 +28,14 @@ import Animated, {
   withTiming,
   Easing,
   useAnimatedStyle,
+  withDecay,
 } from "react-native-reanimated";
 import "react-native-reanimated";
 import { useFonts, Poppins_400Regular } from "@expo-google-fonts/poppins";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 
 // Custom Imports
 import colors from "../config/colors";
@@ -45,13 +48,14 @@ import { search, deleteItem } from "../config/utilities";
 import AppSliderBottomNavBar from "../components/AppSliderBottomNavBar";
 import AppRow from "../components/AppRow";
 import AppChip from "../components/AppChip";
-import { Calendar } from "react-native-calendars";
+import { Calendar, CalendarList } from "react-native-calendars";
 import AppText from "../components/AppText";
 import AppSizedBox from "../components/AppSizedBox";
 import AppLine from "../components/AppLine";
+import AppAnalogClock from "../components/AppAnalogClock";
 
 //Util for Search
-let todosForSearch = {};
+let todosForSearch = { completed: [], pending: [] };
 let tab = 0;
 
 //Tab Navigator
@@ -69,6 +73,7 @@ function reducer(state, action) {
     }
 
     case "addTodo": {
+      todosForSearch.pending = [action.todo, ...state.pending];
       return {
         ...state,
         pending: [action.todo, ...state.pending],
@@ -132,40 +137,48 @@ function reducer(state, action) {
 export default function HomePage({ route, navigation }) {
   //States
   const { height, width } = useWindowDimensions();
-  const [taskInputController, settaskInputController] = useState("");
+  const [taskInputController, settaskInputController] = useState({
+    title: "",
+    markDate: "",
+  });
   const [taskSearch, settaskSearch] = useState("");
   const [fetching, setFetching] = useState(true);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [keyboardStatus, setKeyboardStatus] = useState(0);
   const [bottomNavVisible, setBottomNavVisible] = useState(false);
-  const [todoCategories, setTodoCategories] = useState([
-    { id: 1, title: "Meeting", selected: false },
-    { id: 2, title: "Review", selected: false },
-    { id: 3, title: "Marketing", selected: false },
-    { id: 4, title: "Design Project", selected: false },
-  ]);
+  const [todoCategories, setTodoCategories] = useState([]);
   const [editTodo, setEditTodo] = useState({});
   const [todoObject, setTodoObject] = useState({});
   const [chipTextController, setChipTextController] = useState("");
+  const [dueDateMarker, setDueDateMarker] = useState({});
+  const [markedDates, setMarkedDates] = useState({});
+  const [time, setTime] = useState(new Date());
 
   const isAddOnFocus = useRef();
+  const scrollForDateTime = useRef();
 
   const [state, dispatch] = useReducer(reducer, {
     completed: [],
     pending: [],
   });
 
-  let markingDates = useMemo(() => {
-    return [...state.completed, ...state.pending].reduce((obj, item) => {
-      return {
-        ...obj,
-        [item.date.toISOString().slice(0, 10)]: {
-          selected: true,
-          marked: true,
-          selectedColor: item.completed ? "green" : "red",
+  let mem = useMemo(() => {
+    if (taskSearch === "") {
+      let newMarkedDates = [...state.completed, ...state.pending].reduce(
+        (obj, item) => {
+          return {
+            ...obj,
+            [new Date(item.dueDate).toISOString().slice(0, 10)]: {
+              selected: true,
+              marked: true,
+              selectedColor: item.completed ? "green" : "red",
+            },
+          };
         },
-      };
-    }, {});
+        {}
+      );
+      setMarkedDates({ ...newMarkedDates });
+    }
   }, [state]);
 
   let now = new Date().toDateString();
@@ -178,20 +191,17 @@ export default function HomePage({ route, navigation }) {
   //Get Todos
   useEffect(() => {
     async function getTodos() {
-      const userId = route.params.id;
-      const response = await axios(
-        `https://jsonplaceholder.typicode.com/todos`
-      );
       let completedTodos = [];
       let pendingTodos = [];
-      response.data.filter((todo) => {
-        if (todo.userId === userId) {
-          let y = Math.random() * (1 - 0.996) + 0.996;
-          todo.date = new Date(Date.now() * y);
-          if (todo.completed) completedTodos.push(todo);
-          else pendingTodos.push(todo);
-        }
-      });
+
+      const jsonValue = await AsyncStorage.getItem(
+        `@todos_${route.params.userId}`
+      );
+      const parsedData = JSON.parse(jsonValue);
+
+      if (parsedData && parsedData.completed)
+        completedTodos = parsedData.completed;
+      if (parsedData && parsedData.pending) pendingTodos = parsedData.pending;
       dispatch({
         type: "setTodos",
         completed: completedTodos,
@@ -201,12 +211,76 @@ export default function HomePage({ route, navigation }) {
         completed: completedTodos,
         pending: pendingTodos,
       };
+    }
+    async function getCategories() {
+      const jsonValue = await AsyncStorage.getItem(
+        `@todosCategories_${route.params.userId}`
+      );
+      const parsedData = JSON.parse(jsonValue);
+
+      setTodoCategories([...parsedData.categories]);
       setFetching(false);
     }
 
     getTodos();
-    // console.log(todoObject.date.toString().slice(0, 24));
+    getCategories();
   }, []);
+
+  //DB Setters
+
+  //Todos
+  useEffect(() => {
+    if (!fetching && taskSearch === "") {
+      async function setDB() {
+        const jsonValue = JSON.stringify({
+          ...state,
+        });
+        await AsyncStorage.setItem(`@todos_${route.params.userId}`, jsonValue)
+          .then((value) => {
+            console.log("DB Setted");
+            return 200;
+          })
+          .catch((err) => {
+            ToastAndroid.show(
+              "Unable to Connect... Try Again",
+              ToastAndroid.SHORT
+            );
+            console.log("Error");
+            return 400;
+          });
+      }
+
+      setDB();
+    }
+  }, [state]);
+
+  //Categories
+  useEffect(() => {
+    if (!fetching && taskSearch === "") {
+      async function setDB() {
+        const jsonValue = JSON.stringify({
+          categories: todoCategories,
+        });
+        await AsyncStorage.setItem(
+          `@todosCategories_${route.params.userId}`,
+          jsonValue
+        )
+          .then((value) => {
+            return 200;
+          })
+          .catch((err) => {
+            ToastAndroid.show(
+              "Unable to Connect... Try Again",
+              ToastAndroid.SHORT
+            );
+            console.log("Error");
+            return 400;
+          });
+      }
+
+      setDB();
+    }
+  }, [todoCategories]);
 
   //Event Listener for KeyBoard
   useEffect(() => {
@@ -230,6 +304,14 @@ export default function HomePage({ route, navigation }) {
         isAddOnFocus.current.focus();
       } else {
         isAddOnFocus.current.blur();
+        resetTaskInput();
+        let keys = Object.keys(dueDateMarker);
+        let lastItem = keys.length ? keys.at(keys.length - 1) : null;
+        if (lastItem && dueDateMarker[lastItem].selectedColor === "blue")
+          delete dueDateMarker[lastItem];
+
+        todoCategories.filter((item) => (item.selected = false));
+        scrollForDateTime.current.scrollTo();
       }
     }
   }, [bottomNavVisible]);
@@ -268,23 +350,64 @@ export default function HomePage({ route, navigation }) {
         pending: search(todosForSearch.pending, newText),
       });
   };
-  const addTodo = () => {
-    if (taskInputController.trim() === "") return;
-    translateY.value = withTiming(0);
+
+  const addTodo = async () => {
+    if (taskInputController["title"] === "") {
+      ToastAndroid.show("Please Enter Title", ToastAndroid.SHORT);
+      return;
+    }
+    if (taskInputController["markDate"] === "") {
+      scrollForDateTime.current.scrollTo();
+      ToastAndroid.show("Please Select Date", ToastAndroid.SHORT);
+      return;
+    }
+    let markDateString = new Date(taskInputController.markDate);
+
+    if (
+      markDateString.getHours() === 5 &&
+      markDateString.getMinutes() === 30 &&
+      markDateString.getSeconds() === 0
+    ) {
+      scrollForDateTime.current.scrollToEnd({ animated: true });
+      ToastAndroid.show("Please Select Time", ToastAndroid.SHORT);
+      return;
+    }
+
+    let categories = [];
+    todoCategories.filter((item) => {
+      if (item.selected) categories.push(item.title.slice(0, -2));
+    });
+
+    if (categories.length === 0) {
+      ToastAndroid.show("Please Select Category", ToastAndroid.SHORT);
+      return;
+    }
+
+    let newTodo = {
+      userId: route.params.userId,
+      id: Math.random(),
+      title: taskInputController.title.trim(),
+      completed: false,
+      createdDate: Date.now(),
+      dueDate: taskInputController.markDate,
+      categories: categories,
+    };
 
     dispatch({
       type: "addTodo",
-      todo: {
-        userId: route.params.id,
-        id: Math.random(),
-        title: taskInputController.trim(),
-        completed: false,
-        date: new Date(),
-      },
+      todo: newTodo,
     });
 
-    settaskInputController("");
+    translateY.value = withTiming(0);
     setBottomNavVisible(false);
+  };
+
+  //Resetter
+  const resetTaskInput = () => {
+    settaskInputController({
+      title: "",
+      markDate: "",
+    });
   };
 
   //Profile Model
@@ -378,7 +501,6 @@ export default function HomePage({ route, navigation }) {
       } else {
         translateY.value = withSpring(0);
         runOnJS(setBottomNavVisible)(false);
-        runOnJS(settaskInputController)("");
       }
     },
   });
@@ -389,6 +511,7 @@ export default function HomePage({ route, navigation }) {
   const panGestureEventChips = useAnimatedGestureHandler({
     onStart: (event, context) => {
       context.startX = translateX.value;
+      context.initX = translateX.value;
     },
     onActive: (event, context) => {
       if (
@@ -397,7 +520,11 @@ export default function HomePage({ route, navigation }) {
       )
         translateX.value = event.translationX + context.startX;
     },
-    onEnd: (event) => {},
+    onEnd: (event, context) => {
+      if (context.initX > translateX.value)
+        translateX.value = withSpring(translateX.value - 15);
+      else translateX.value = withSpring(translateX.value + 15);
+    },
   });
   const animatedStyleChips = useAnimatedStyle(() => {
     return {
@@ -447,11 +574,6 @@ export default function HomePage({ route, navigation }) {
                 disabled={bottomNavVisible}
                 onPress={() => {
                   navigation.navigate("AgendaPage");
-                  // setBottomNavVisible(true);
-                  // translateY.value = withTiming(height * -0.675, {
-                  //   duration: 500,
-                  //   easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-                  // });
                 }}
               />
             </AppRow>
@@ -529,7 +651,7 @@ export default function HomePage({ route, navigation }) {
                         todos={state.pending}
                         fetching={fetching}
                         setFetching={(newValue) => setFetching(newValue)}
-                        deletetodo={(item) => {
+                        deletetodo={async (item) => {
                           dispatch({ type: "deleteTodo", todo: item });
                         }}
                         markCompletedOnToDo={(item) => {
@@ -543,7 +665,7 @@ export default function HomePage({ route, navigation }) {
                       tab = 0;
                     },
                     blur: (e) => {
-                      searchTodo("");
+                      if (taskSearch !== "") searchTodo("");
                     },
                   })}
                 />
@@ -570,7 +692,7 @@ export default function HomePage({ route, navigation }) {
                       tab = 1;
                     },
                     blur: (e) => {
-                      searchTodo("");
+                      if (taskSearch !== "") searchTodo("");
                       if (bottomNavVisible) {
                         translateY.value = withTiming(0, {
                           duration: 500,
@@ -615,9 +737,16 @@ export default function HomePage({ route, navigation }) {
               ) : null}
               <TextInput
                 ref={isAddOnFocus}
+                multiline={true}
+                numberOfLines={2}
                 style={styles.addBar}
-                onChangeText={settaskInputController}
-                value={taskInputController}
+                onChangeText={(newText) =>
+                  settaskInputController({
+                    ...taskInputController,
+                    title: newText,
+                  })
+                }
+                value={taskInputController.title}
                 placeholder={"What do you want to do?"}
                 placeholderTextColor={"rgba(255, 255, 255, 0.3)"}
               />
@@ -631,10 +760,10 @@ export default function HomePage({ route, navigation }) {
                       flexDirection: "row",
                       width: width * 2,
                       marginHorizontal: 18,
-                      rowGap: 12.5,
+                      // rowGap: 12.5,
                       columnGap: 15,
                       flexWrap: "wrap",
-                      marginTop: 30,
+                      marginTop: 15,
                       // backgroundColor: "red",
                     },
                     animatedStyleChips,
@@ -665,33 +794,102 @@ export default function HomePage({ route, navigation }) {
                   />
                 </Animated.View>
               </PanGestureHandler>
-              <View
-                style={{
-                  width: width * 0.75,
-                  marginVertical: 20,
-                }}
+              <ScrollView
+                pagingEnabled={true}
+                horizontal
+                ref={scrollForDateTime}
               >
-                <Calendar
-                  style={{ borderRadius: 20, overflow: "hidden" }}
-                  markedDates={markingDates}
-                  onDayPress={(DateData) => {
-                    let todo;
-                    for (const iterator of [
-                      ...state.completed,
-                      ...state.pending,
-                    ]) {
-                      if (
-                        iterator.date.toISOString().slice(0, 10) ===
-                        DateData.dateString
-                      ) {
-                        todo = iterator;
-                        break;
-                      }
-                    }
-                    setTodoObject({ ...todo });
-                  }}
-                />
-              </View>
+                <View style={{ marginHorizontal: width * 0.125 }}>
+                  <View
+                    style={{
+                      width: width * 0.75,
+                      marginTop: 15,
+                    }}
+                  >
+                    <Calendar
+                      style={{
+                        borderRadius: 20,
+                        overflow: "hidden",
+                      }}
+                      markedDates={{ ...markedDates, ...dueDateMarker }}
+                      onDayPress={(DateData) => {
+                        if (Date.now() <= DateData.timestamp) {
+                          let keys = Object.keys(dueDateMarker);
+                          let lastItem = keys.length
+                            ? keys.at(keys.length - 1)
+                            : null;
+                          if (
+                            lastItem &&
+                            dueDateMarker[lastItem].selectedColor === "blue"
+                          )
+                            delete dueDateMarker[lastItem];
+
+                          setDueDateMarker({
+                            ...dueDateMarker,
+                            [DateData.dateString]: {
+                              selected: true,
+                              marked: true,
+                              selectedColor: "blue",
+                            },
+                          });
+                          settaskInputController({
+                            ...taskInputController,
+                            markDate: DateData.timestamp,
+                          });
+                        }
+                      }}
+                    />
+                  </View>
+                </View>
+                <View style={{ marginHorizontal: width * 0.125 }}>
+                  <View
+                    style={{
+                      width: width * 0.75,
+                      marginTop: 50,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <AppAnalogClock
+                      hour={time.getHours()}
+                      minutes={time.getMinutes()}
+                      seconds={time.getSeconds()}
+                      showSeconds={false}
+                      size={height * 0.3}
+                      onPress={() => {
+                        if (taskInputController.markDate === "") {
+                          scrollForDateTime.current.scrollTo();
+                          ToastAndroid.show(
+                            "Please Select Date",
+                            ToastAndroid.SHORT
+                          );
+                          return;
+                        }
+                        DateTimePickerAndroid.open({
+                          mode: "time",
+                          onChange: (time) => {
+                            // console.log("Changed");
+                            let newTime = new Date(time.nativeEvent.timestamp);
+
+                            setTime(newTime);
+                            settaskInputController({
+                              ...taskInputController,
+                              markDate: new Date(
+                                taskInputController.markDate
+                              ).setHours(
+                                newTime.getHours(),
+                                newTime.getMinutes(),
+                                1
+                              ),
+                            });
+                          },
+                          value: new Date(),
+                        });
+                      }}
+                    />
+                  </View>
+                </View>
+              </ScrollView>
               <AppLine />
             </View>
             <AppRow>
@@ -936,10 +1134,9 @@ function TodoModelRowComponent({ heading, value }) {
 const styles = StyleSheet.create({
   analysisBar: { fontSize: 15, fontFamily: "Poppins_600SemiBold" },
   addBar: {
-    width: "100%",
+    width: "87.5%",
     color: colors.white,
     marginLeft: 20,
-    marginTop: 20,
     fontSize: 25,
     alignSelf: "flex-start",
     fontFamily: "Poppins_400Regular",

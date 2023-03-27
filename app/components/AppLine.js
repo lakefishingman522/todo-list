@@ -7,26 +7,19 @@ export default function AppLine({
   color = colors.white,
   borderWidth = 0.3,
   borderColor = "rgba(255, 255, 255, 0.5)",
-  marginVertical = 20,
+  marginVertical = 15,
 }) {
-  return !horizontal ? (
+  return (
     <View
-      style={{
-        borderWidth: borderWidth,
-        width: "100%",
-        borderColor: borderColor,
-        marginVertical: marginVertical,
-        backgroundColor: color,
-      }}
-    />
-  ) : (
-    <View
-      style={{
-        borderWidth: 0.3,
-        height: "100%",
-        borderColor: "rgba(255, 255, 255, 0.5)",
-        marginVertical: 20,
-      }}
+      style={[
+        {
+          borderWidth: borderWidth,
+          borderColor: borderColor,
+          marginVertical: marginVertical,
+          backgroundColor: color,
+        },
+        !horizontal ? { width: "100%" } : { height: "100%" },
+      ]}
     />
   );
 }

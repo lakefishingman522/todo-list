@@ -92,3 +92,43 @@ function AgendaPage({ navigation, route }) {
 }
 
 export default AgendaPage;
+
+/*
+              <View
+                style={{
+                  width: width * 0.75,
+                  marginTop: 15,
+                }}
+              >
+                <Calendar
+                  style={{ borderRadius: 20, overflow: "hidden" }}
+                  markedDates={{ ...markedDates, ...dueDateMarker }}
+                  onDayPress={(DateData) => {
+                    if (Date.now() <= DateData.timestamp) {
+                      let keys = Object.keys(dueDateMarker);
+                      let lastItem = keys.length
+                        ? keys.at(keys.length - 1)
+                        : null;
+                      if (
+                        lastItem &&
+                        dueDateMarker[lastItem].selectedColor === "blue"
+                      )
+                        delete dueDateMarker[lastItem];
+
+                      setDueDateMarker({
+                        ...dueDateMarker,
+                        [DateData.dateString]: {
+                          selected: true,
+                          marked: true,
+                          selectedColor: "blue",
+                        },
+                      });
+                      settaskInputController({
+                        ...taskInputController,
+                        markDate: DateData.timestamp,
+                      });
+                    }
+                  }}
+                />
+              </View>
+*/

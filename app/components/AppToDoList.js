@@ -5,6 +5,7 @@ import BouncyCheckbox from "react-native-bouncy-checkbox";
 import colors from "../config/colors";
 import AppRow from "./AppRow";
 import Animated, {
+  runOnJS,
   useAnimatedGestureHandler,
   useAnimatedStyle,
   useSharedValue,
@@ -21,14 +22,51 @@ export default function AppToDoList({
   onPressCross,
   onPressContent,
 }) {
+  //Calculating Details
   let indicator = data.completed
     ? {
         backgroundColor: "green",
       }
     : { backgroundColor: "red" };
 
-  let time = data.date.toString().slice(0, 24).slice(16, 21);
-  let date = data.date.toString().slice(0, 24).slice(0, 15);
+  let createdDate = new Date(data.createdDate);
+  let dueDate = new Date(data.dueDate);
+
+  let dueDateString = dueDate.toISOString().slice(0, 10);
+  let createDateString = createdDate.toISOString().slice(0, 10);
+
+  let dueTimeString = dueDate.toString().slice(16, 21);
+  let emote = "";
+
+  switch (data.categories[0]) {
+    case "Meeting":
+      emote += "🤝\n";
+      break;
+
+    case "Review":
+      emote += "📈\n";
+      break;
+
+    case "Marketing":
+      emote += "🔊\n";
+      break;
+
+    case "Design Project":
+      emote += "🎨\n";
+      break;
+
+    case "College":
+      emote += "🎓\n";
+      break;
+
+    case "Movie":
+      emote += "🍿\n";
+      break;
+
+    default:
+      emote += "📝";
+      break;
+  }
 
   // Slide To Delete
   const translateX = useSharedValue(0);
@@ -62,6 +100,7 @@ export default function AppToDoList({
       height: height.value,
     };
   });
+  const [isAnimating, setIsAnimating] = useState(false);
 
   return (
     <View>
@@ -79,7 +118,13 @@ export default function AppToDoList({
         <Animated.View
           style={[styles.container, animatedStyle, animatedStyletoShowDetails]}
         >
-          <View style={[styles.indicator, indicator]} />
+          <View style={{ alignItems: "center" }}>
+            <View style={[styles.indicator, indicator]} />
+            <AppText style={{ marginVertical: 8, fontSize: 18 }}>
+              {emote}
+            </AppText>
+          </View>
+
           <View>
             <AppRow justifyContent="space-between">
               <AppText
@@ -89,9 +134,13 @@ export default function AppToDoList({
               >
                 {data.title}
               </AppText>
-              <AppText style={styles.time}>{time}</AppText>
+              <AppText style={styles.time}>{dueTimeString}</AppText>
             </AppRow>
-            <AppText style={styles.date}>{date}</AppText>
+            <AppRow justifyContent="space-between">
+              <AppText style={styles.date}>{createDateString}</AppText>
+              <AppText style={styles.date}>{"->"}</AppText>
+              <AppText style={styles.date}>{dueDateString}</AppText>
+            </AppRow>
             {extraHeight < 0 ? (
               <AppRow style={styles.button} alignItems="center">
                 <BouncyCheckbox
@@ -107,10 +156,18 @@ export default function AppToDoList({
             ) : null}
           </View>
           <Pressable
+            disabled={isAnimating}
             onPress={() => {
-              height.value = withTiming(height.value + extraHeight, {
-                duration: 400,
-              });
+              setIsAnimating(true);
+              height.value = withTiming(
+                height.value + extraHeight,
+                {
+                  duration: 400,
+                },
+                ({ finished }) => {
+                  runOnJS(setIsAnimating)(false);
+                }
+              );
               setterExtraHeight(extraHeight * -1);
             }}
             style={styles.arrow}
