@@ -152,6 +152,7 @@ export default function HomePage({ route, navigation }) {
   const [chipTextController, setChipTextController] = useState("");
   const [dueDateMarker, setDueDateMarker] = useState({});
   const [markedDates, setMarkedDates] = useState({});
+  const [agendaList, setAgendaList] = useState([]);
   const [time, setTime] = useState(new Date());
 
   const isAddOnFocus = useRef();
@@ -164,8 +165,11 @@ export default function HomePage({ route, navigation }) {
 
   let mem = useMemo(() => {
     if (taskSearch === "") {
+      let newAgendaList = [];
       let newMarkedDates = [...state.completed, ...state.pending].reduce(
         (obj, item) => {
+          item.date = new Date(item.dueDate).toISOString().slice(0, 10);
+          newAgendaList.push(item);
           return {
             ...obj,
             [new Date(item.dueDate).toISOString().slice(0, 10)]: {
@@ -177,6 +181,7 @@ export default function HomePage({ route, navigation }) {
         },
         {}
       );
+      setAgendaList(newAgendaList);
       setMarkedDates({ ...newMarkedDates });
     }
   }, [state]);
@@ -573,7 +578,7 @@ export default function HomePage({ route, navigation }) {
                 color="black"
                 disabled={bottomNavVisible}
                 onPress={() => {
-                  navigation.navigate("AgendaPage");
+                  navigation.navigate("AgendaPage", agendaList);
                 }}
               />
             </AppRow>
@@ -718,6 +723,7 @@ export default function HomePage({ route, navigation }) {
                 <Pressable
                   style={styles.addPressable}
                   onPress={() => {
+                    // tempHandler();
                     translateY.value = withTiming(height * -0.675, {
                       duration: 500,
                       easing: Easing.bezier(0.25, 0.1, 0.25, 1),
@@ -813,7 +819,10 @@ export default function HomePage({ route, navigation }) {
                       }}
                       markedDates={{ ...markedDates, ...dueDateMarker }}
                       onDayPress={(DateData) => {
-                        if (Date.now() <= DateData.timestamp) {
+                        if (
+                          Date.now() <= DateData.timestamp ||
+                          new Date(Date.now()).getDate() === DateData.day
+                        ) {
                           let keys = Object.keys(dueDateMarker);
                           let lastItem = keys.length
                             ? keys.at(keys.length - 1)
