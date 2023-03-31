@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet } from "react-native";
 
-import AppIcon from "./AppIcon";
+import AppRoundedIcon from "./AppRoundedIcon";
 
 function AppFloatingActionButton({
   onPress,
@@ -23,7 +23,7 @@ function AppFloatingActionButton({
       style={styles.floatingIcon}
       android_ripple={rippleConfig}
     >
-      <AppIcon
+      <AppRoundedIcon
         style={iconStyle}
         name={name}
         backgroundColor={backgroundColor}

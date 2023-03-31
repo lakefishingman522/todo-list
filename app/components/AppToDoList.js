@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
-import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
+import { View, StyleSheet, Pressable, useWindowDimensions } from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 import colors from "../config/colors";
 import AppRow from "./AppRow";
@@ -15,6 +14,7 @@ import Animated, {
 import { PanGestureHandler } from "react-native-gesture-handler";
 
 import AppText from "./AppText";
+import AppIcon from "./AppIcon";
 
 export default function AppToDoList({
   data,
@@ -22,6 +22,8 @@ export default function AppToDoList({
   onPressCross,
   onPressContent,
 }) {
+  const { width: vw, height: vh } = useWindowDimensions();
+
   //Calculating Details
   let indicator = data.completed
     ? {
@@ -98,13 +100,14 @@ export default function AppToDoList({
   const animatedStyletoShowDetails = useAnimatedStyle(() => {
     return {
       height: height.value,
+      width: vw * 0.9,
     };
   });
   const [isAnimating, setIsAnimating] = useState(false);
 
   return (
     <View>
-      <MaterialCommunityIcons
+      <AppIcon
         onPress={onPressCross}
         style={styles.icon}
         name="delete"
@@ -170,9 +173,10 @@ export default function AppToDoList({
               );
               setterExtraHeight(extraHeight * -1);
             }}
-            style={styles.arrow}
+            style={[styles.arrow, { left: vw * 0.275 }]}
           >
-            <MaterialIcons
+            <AppIcon
+              iconType="MaterialIcons"
               name={
                 extraHeight > 0 ? "keyboard-arrow-down" : "keyboard-arrow-up"
               }
@@ -192,7 +196,6 @@ const styles = StyleSheet.create({
     height: 40,
     position: "absolute",
     bottom: 5,
-    left: "40%",
     alignItems: "center",
     justifyContent: "flex-end",
   },
@@ -205,12 +208,11 @@ const styles = StyleSheet.create({
   },
   container: {
     overflow: "hidden",
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 5,
-    justifyContent: "space-between",
+    paddingHorizontal: 10,
+    paddingTop: 15,
+    justifyContent: "space-around",
     marginVertical: 16,
-    marginHorizontal: 24,
+    marginHorizontal: 20,
     borderRadius: 10,
     backgroundColor: colors.white,
     elevation: 10,

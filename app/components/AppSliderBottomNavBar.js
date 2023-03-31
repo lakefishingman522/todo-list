@@ -24,7 +24,12 @@ export default function AppSBNB({
         style={[
           styles.bottomNavBar,
           animatedStyle,
-          { backgroundColor: bgColor, top: height * 0.96 },
+          {
+            backgroundColor: bgColor,
+            top: height * 0.95,
+            width: width,
+            height: height * 0.8,
+          },
         ]}
       >
         {children}
@@ -35,9 +40,8 @@ export default function AppSBNB({
 
 const styles = StyleSheet.create({
   bottomNavBar: {
-    width: "100%",
-    height: "78.5%",
-    borderRadius: 40,
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
     position: "absolute",
     alignItems: "center",
   },

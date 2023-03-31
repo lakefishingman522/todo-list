@@ -1,9 +1,9 @@
 import React, { forwardRef, useState } from "react";
 import { StyleSheet, TextInput, View } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
 import { useFonts, Poppins_700Bold } from "@expo-google-fonts/poppins";
 
 import colors from "../config/colors";
+import AppIcon from "./AppIcon";
 
 const AppTextField = forwardRef(
   (
@@ -35,7 +35,8 @@ const AppTextField = forwardRef(
             style,
           ]}
         >
-          <FontAwesome
+          <AppIcon
+            iconType="FontAwesome"
             onPress={onPressIcon}
             name={iconName}
             color={colors.black}

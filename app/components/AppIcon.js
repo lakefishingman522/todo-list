@@ -1,36 +1,25 @@
 import React from "react";
-import { View } from "react-native";
-import { AntDesign } from "@expo/vector-icons";
+import * as Icons from "@expo/vector-icons";
 
 function AppIcon({
+  iconType = "MaterialCommunityIcons",
+  onPress,
   name,
   size = 24,
-  backgroundColor = "black",
-  iconColor = "white",
+  color,
   style,
-  onPress,
+  disabled = false,
 }) {
+  let Icon = Icons[iconType];
   return (
-    <View
-      style={[
-        {
-          width: size,
-          height: size,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor,
-          borderRadius: size / 2,
-        },
-        style,
-      ]}
-    >
-      <AntDesign
-        onPress={onPress}
-        name={name}
-        size={size * 0.5}
-        color={iconColor}
-      />
-    </View>
+    <Icon
+      onPress={onPress}
+      name={name}
+      color={color}
+      size={size}
+      style={style}
+      disabled={disabled}
+    />
   );
 }
 

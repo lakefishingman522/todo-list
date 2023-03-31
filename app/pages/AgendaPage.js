@@ -3,6 +3,7 @@ import { View, TouchableOpacity, useWindowDimensions } from "react-native";
 import { Agenda } from "react-native-calendars";
 import AppRow from "../components/AppRow";
 import AppText from "../components/AppText";
+import colors from "../config/colors";
 import { getDates } from "../config/utilities";
 
 const AgendaPage = ({ navigation, route }) => {
@@ -11,8 +12,10 @@ const AgendaPage = ({ navigation, route }) => {
   const [items, setItems] = useState({});
   let now = new Date();
 
-  let from = new Date(now.setMonth(now.getMonth() - 1));
-  let to = new Date(now.setMonth(now.getMonth() + 3));
+  now.setFullYear(now.getFullYear(), now.getMonth(), 1);
+
+  let from = new Date(new Date(now).setMonth(now.getMonth() - 1));
+  let to = new Date(new Date(now).setMonth(now.getMonth() + 2));
 
   from.setFullYear(from.getFullYear(), from.getMonth(), 1);
   to.setFullYear(to.getFullYear(), to.getMonth(), 1);
@@ -87,11 +90,7 @@ const AgendaPage = ({ navigation, route }) => {
           !item.completed ? { shadowColor: "red" } : { shadowColor: "green" },
         ]}
       >
-        <AppRow
-          // justifyContent="space-between"
-          alignItems="center"
-          style={{ padding: 20 }}
-        >
+        <AppRow alignItems="center" style={{ padding: 20 }}>
           <View
             style={{
               borderRadius: 15,
@@ -142,6 +141,19 @@ const AgendaPage = ({ navigation, route }) => {
         futureScrollRange={2}
         maxDate={to.toISOString().slice(0, 10)}
         minDate={from.toISOString().slice(0, 10)}
+        renderKnob={() => {
+          return (
+            <View
+              style={{
+                backgroundColor: colors.secondary,
+                width: 35,
+                height: 6,
+                marginTop: 10,
+                borderRadius: 5,
+              }}
+            />
+          );
+        }}
       />
     </View>
   );

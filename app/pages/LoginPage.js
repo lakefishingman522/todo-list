@@ -15,7 +15,6 @@ import AppButton from "../components/AppButton";
 import colors from "../config/colors";
 import { Pressable } from "react-native";
 import AppText from "../components/AppText";
-// import axios from "axios";
 
 export default function LoginPage({ navigation }) {
   //States
@@ -33,14 +32,15 @@ export default function LoginPage({ navigation }) {
   const refLoginInput = useRef(null);
   const refSignUpInput = useRef(null);
 
+  let tabMul = currentTab ? 0.282 : 0.3;
+
   //Get Users
   useEffect(() => {
     async function getUsers() {
       let tries = 3,
         gotUsers = false;
 
-      // await AsyncStorage.clear();
-      while (tries--) {
+      while (!gotUsers && tries--) {
         await AsyncStorage.getItem("@Users_Array", (err, result) => {
           if (err) return;
           else {
@@ -88,7 +88,9 @@ export default function LoginPage({ navigation }) {
       <View style={[styles.container, { height: height * 1.05 }]}>
         <View style={styles.upperSphere}></View>
         <View style={styles.lowerSphere}></View>
-        <View style={[styles.card, { top: height * 0.3, left: width * 0.075 }]}>
+        <View
+          style={[styles.card, { top: height * tabMul, left: width * 0.075 }]}
+        >
           <View style={styles.header}>
             <Pressable
               onPress={() => {
@@ -161,7 +163,7 @@ export default function LoginPage({ navigation }) {
                   let ourUser = { name: "" };
                   users.forEach((user) => {
                     if (
-                      user.email.toLowerCase() === loginEmail &&
+                      user.email.toLowerCase() === loginEmail.toLowerCase() &&
                       user.password === loginPassword
                     )
                       ourUser = user;
@@ -218,7 +220,7 @@ export default function LoginPage({ navigation }) {
 
                   let alreadyResgistered = false;
                   for (const user of users) {
-                    if (user.email === signUpEmail) {
+                    if (user.email === signUpEmail.toLowerCase()) {
                       ToastAndroid.show(
                         "User Already Registered",
                         ToastAndroid.SHORT
@@ -290,7 +292,6 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     position: "absolute",
     width: "85%",
-    height: "50%",
     elevation: 20,
     padding: 24,
     backgroundColor: colors.white,

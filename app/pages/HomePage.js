@@ -13,7 +13,6 @@ import {
   Pressable,
   ToastAndroid,
 } from "react-native";
-import { FontAwesome, AntDesign } from "@expo/vector-icons";
 import {
   GestureHandlerRootView,
   PanGestureHandler,
@@ -33,26 +32,25 @@ import Animated, {
 import "react-native-reanimated";
 import { useFonts, Poppins_400Regular } from "@expo-google-fonts/poppins";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 
 // Custom Imports
 import colors from "../config/colors";
-import axios from "axios";
 import AppToDoList from "../components/AppToDoList";
 import AppBar from "../components/AppBar";
-import AppIcon from "../components/AppIcon";
+import AppRoundedIcon from "../components/AppRoundedIcon";
 import AppButton from "../components/AppButton";
 import { search, deleteItem } from "../config/utilities";
 import AppSliderBottomNavBar from "../components/AppSliderBottomNavBar";
 import AppRow from "../components/AppRow";
 import AppChip from "../components/AppChip";
-import { Calendar, CalendarList } from "react-native-calendars";
+import { Calendar } from "react-native-calendars";
 import AppText from "../components/AppText";
 import AppSizedBox from "../components/AppSizedBox";
 import AppLine from "../components/AppLine";
 import AppAnalogClock from "../components/AppAnalogClock";
+import AppIcon from "../components/AppIcon";
 
 //Util for Search
 let todosForSearch = { completed: [], pending: [] };
@@ -157,6 +155,7 @@ export default function HomePage({ route, navigation }) {
 
   const isAddOnFocus = useRef();
   const scrollForDateTime = useRef();
+  const scrollForBN = useRef();
 
   const [state, dispatch] = useReducer(reducer, {
     completed: [],
@@ -193,7 +192,7 @@ export default function HomePage({ route, navigation }) {
     Poppins_400Regular,
   });
 
-  //Get Todos
+  //Get Todos and Categories
   useEffect(() => {
     async function getTodos() {
       let completedTodos = [];
@@ -222,8 +221,8 @@ export default function HomePage({ route, navigation }) {
         `@todosCategories_${route.params.userId}`
       );
       const parsedData = JSON.parse(jsonValue);
-
-      setTodoCategories([...parsedData.categories]);
+      if (parsedData) setTodoCategories([...parsedData.categories]);
+      else setTodoCategories([]);
       setFetching(false);
     }
 
@@ -317,6 +316,7 @@ export default function HomePage({ route, navigation }) {
 
         todoCategories.filter((item) => (item.selected = false));
         scrollForDateTime.current.scrollTo();
+        scrollForBN.current.scrollTo();
       }
     }
   }, [bottomNavVisible]);
@@ -510,33 +510,6 @@ export default function HomePage({ route, navigation }) {
     },
   });
 
-  //Chips Gestures
-  const translateX = useSharedValue(200);
-  const newBoxes = (todoCategories.length - 4) * 116;
-  const panGestureEventChips = useAnimatedGestureHandler({
-    onStart: (event, context) => {
-      context.startX = translateX.value;
-      context.initX = translateX.value;
-    },
-    onActive: (event, context) => {
-      if (
-        event.translationX + context.startX > 0 - newBoxes &&
-        event.translationX + context.startX < 210
-      )
-        translateX.value = event.translationX + context.startX;
-    },
-    onEnd: (event, context) => {
-      if (context.initX > translateX.value)
-        translateX.value = withSpring(translateX.value - 15);
-      else translateX.value = withSpring(translateX.value + 15);
-    },
-  });
-  const animatedStyleChips = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateX: translateX.value }],
-    };
-  });
-
   if (fontsLoaded)
     return (
       <GestureHandlerRootView style={styles.container}>
@@ -572,7 +545,8 @@ export default function HomePage({ route, navigation }) {
                   {now}
                 </AppText>
               </View>
-              <MaterialCommunityIcons
+              <AppIcon
+                iconType="MaterialCommunityIcons"
                 name="calendar-month-outline"
                 size={32}
                 color="black"
@@ -586,10 +560,7 @@ export default function HomePage({ route, navigation }) {
               size={30}
               name={"search1"}
               iconColor="white"
-              barStyle={[
-                styles.appBarStyle,
-                keyboardStatus ? { height: "11.8%" } : {},
-              ]}
+              barStyle={styles.appBarStyle}
             >
               <View style={styles.viewHeader}>
                 <TextInput
@@ -602,7 +573,8 @@ export default function HomePage({ route, navigation }) {
                 {(keyboardStatus || taskSearch != "") &&
                 !isAddOnFocus.current.isFocused() ? (
                   <AppSizedBox width={30} height={20}>
-                    <AntDesign
+                    <AppIcon
+                      iconType="AntDesign"
                       name="close"
                       onPress={() => {
                         if (taskSearch !== "") searchTodo("");
@@ -614,12 +586,19 @@ export default function HomePage({ route, navigation }) {
                 ) : (
                   <AppSizedBox width={20} height={20} />
                 )}
-                <AppIcon
+                <AppRoundedIcon
                   name="user"
                   size={50}
                   iconColor={colors.primary}
                   backgroundColor={colors.white}
-                  onPress={openProfileModel}
+                  onPress={() => {
+                    // openProfileModel();
+                    navigation.navigate("ProfilePage", {
+                      user: route.params,
+                      state: state,
+                    });
+                  }}
+                  style={{ marginLeft: 10, overflow: "hidden" }}
                 />
               </View>
             </AppBar>
@@ -652,6 +631,7 @@ export default function HomePage({ route, navigation }) {
                   children={() => {
                     return (
                       <PopulateTodos
+                        height={height}
                         navigation={navigation}
                         todos={state.pending}
                         fetching={fetching}
@@ -662,6 +642,11 @@ export default function HomePage({ route, navigation }) {
                         markCompletedOnToDo={(item) => {
                           dispatch({ type: "markTodo", todo: item });
                         }}
+                        noTodoMessage={
+                          !state.completed.length && !state.pending.length
+                            ? "No Todos Added"
+                            : "Wow😊 No Pending Tasks👍"
+                        }
                       />
                     );
                   }}
@@ -679,6 +664,7 @@ export default function HomePage({ route, navigation }) {
                   children={() => {
                     return (
                       <PopulateTodos
+                        height={height}
                         navigation={navigation}
                         todos={state.completed}
                         fetching={fetching}
@@ -689,6 +675,11 @@ export default function HomePage({ route, navigation }) {
                         markCompletedOnToDo={(item) => {
                           dispatch({ type: "markTodo", todo: item });
                         }}
+                        noTodoMessage={
+                          !state.completed.length && !state.pending.length
+                            ? "No Todos Added"
+                            : "Keep Working💨 Complete Your Tasks👍"
+                        }
                       />
                     );
                   }}
@@ -716,64 +707,56 @@ export default function HomePage({ route, navigation }) {
           translateY={translateY}
           panGestureEvent={panGestureEvent}
         >
-          <View style={styles.bottomNavContentV1}>
-            <View style={styles.bottomNavContentV2}>
-              <View style={styles.bottomNavContentV3} />
-              {!bottomNavVisible ? (
-                <Pressable
-                  style={styles.addPressable}
-                  onPress={() => {
-                    // tempHandler();
-                    translateY.value = withTiming(height * -0.675, {
-                      duration: 500,
-                      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-                    });
-                    setBottomNavVisible(true);
-                  }}
-                >
-                  <AppRow alignItems="center">
-                    <AntDesign
-                      name="pluscircle"
-                      color={colors.white}
-                      size={45}
-                    />
-                    <AppText style={styles.pressableText}>Add New Todo</AppText>
-                  </AppRow>
-                </Pressable>
-              ) : null}
-              <TextInput
-                ref={isAddOnFocus}
-                multiline={true}
-                numberOfLines={2}
-                style={styles.addBar}
-                onChangeText={(newText) =>
-                  settaskInputController({
-                    ...taskInputController,
-                    title: newText,
-                  })
-                }
-                value={taskInputController.title}
-                placeholder={"What do you want to do?"}
-                placeholderTextColor={"rgba(255, 255, 255, 0.3)"}
-              />
+          <View style={styles.bottomNavKnob} />
+          <ScrollView ref={scrollForBN} scrollEnabled={bottomNavVisible}>
+            <View style={styles.bottomNavContentV1}>
+              <View style={styles.bottomNavContentV2}>
+                {!bottomNavVisible ? (
+                  <Pressable
+                    style={styles.addPressable}
+                    onPress={() => {
+                      // tempHandler();
+                      translateY.value = withTiming(height * -0.675, {
+                        duration: 500,
+                        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+                      });
+                      setBottomNavVisible(true);
+                    }}
+                  >
+                    <AppRow alignItems="center">
+                      <AppIcon
+                        iconType="AntDesign"
+                        name="pluscircle"
+                        color={colors.white}
+                        size={45}
+                      />
+                      <AppText style={styles.pressableText}>
+                        Add New Todo
+                      </AppText>
+                    </AppRow>
+                  </Pressable>
+                ) : null}
+                <TextInput
+                  ref={isAddOnFocus}
+                  multiline={true}
+                  numberOfLines={2}
+                  style={[styles.addBar, { width: width * 0.92 }]}
+                  onChangeText={(newText) =>
+                    settaskInputController({
+                      ...taskInputController,
+                      title: newText,
+                    })
+                  }
+                  value={taskInputController.title}
+                  placeholder={"What do you want to do?"}
+                  placeholderTextColor={"rgba(255, 255, 255, 0.3)"}
+                />
 
-              <PanGestureHandler onGestureEvent={panGestureEventChips}>
-                <Animated.View
-                  style={[
-                    {
-                      justifyContent: "flex-start",
-                      alignItems: "center",
-                      flexDirection: "row",
-                      width: width * 2,
-                      marginHorizontal: 18,
-                      // rowGap: 12.5,
-                      columnGap: 15,
-                      flexWrap: "wrap",
-                      marginTop: 15,
-                      // backgroundColor: "red",
-                    },
-                    animatedStyleChips,
-                  ]}
+                <ScrollView
+                  horizontal
+                  contentContainerStyle={{
+                    alignItems: "center",
+                  }}
                 >
                   {todoCategories.length ? (
                     todoCategories.map((category, index) => (
@@ -790,204 +773,221 @@ export default function HomePage({ route, navigation }) {
                       Create A Chip
                     </AppText>
                   )}
-                  <AppIcon
+                  <AppRoundedIcon
                     name="plus"
                     size={42}
                     iconColor={colors.black}
                     backgroundColor={colors.white}
-                    style={styles.addIcon}
+                    style={styles.addCategoryIcon}
                     onPress={createNewChip}
                   />
-                </Animated.View>
-              </PanGestureHandler>
-              <ScrollView
-                pagingEnabled={true}
-                horizontal
-                ref={scrollForDateTime}
-              >
-                <View style={{ marginHorizontal: width * 0.125 }}>
-                  <View
-                    style={{
-                      width: width * 0.75,
-                      marginTop: 15,
-                    }}
-                  >
-                    <Calendar
+                </ScrollView>
+
+                <ScrollView
+                  pagingEnabled={true}
+                  horizontal
+                  ref={scrollForDateTime}
+                >
+                  <View style={{ marginHorizontal: width * 0.125 }}>
+                    <View
                       style={{
-                        borderRadius: 20,
-                        overflow: "hidden",
+                        width: width * 0.75,
+                        marginTop: 15,
                       }}
-                      markedDates={{ ...markedDates, ...dueDateMarker }}
-                      onDayPress={(DateData) => {
-                        if (
-                          Date.now() <= DateData.timestamp ||
-                          new Date(Date.now()).getDate() === DateData.day
-                        ) {
-                          let keys = Object.keys(dueDateMarker);
-                          let lastItem = keys.length
-                            ? keys.at(keys.length - 1)
-                            : null;
+                    >
+                      <Calendar
+                        style={{
+                          borderRadius: 20,
+                          overflow: "hidden",
+                        }}
+                        markedDates={{ ...markedDates, ...dueDateMarker }}
+                        onDayPress={(DateData) => {
                           if (
-                            lastItem &&
-                            dueDateMarker[lastItem].selectedColor === "blue"
-                          )
-                            delete dueDateMarker[lastItem];
+                            Date.now() <= DateData.timestamp ||
+                            new Date(Date.now()).getDate() === DateData.day
+                          ) {
+                            let keys = Object.keys(dueDateMarker);
+                            let lastItem = keys.length
+                              ? keys.at(keys.length - 1)
+                              : null;
+                            if (
+                              lastItem &&
+                              dueDateMarker[lastItem].selectedColor === "blue"
+                            )
+                              delete dueDateMarker[lastItem];
 
-                          setDueDateMarker({
-                            ...dueDateMarker,
-                            [DateData.dateString]: {
-                              selected: true,
-                              marked: true,
-                              selectedColor: "blue",
-                            },
-                          });
-                          settaskInputController({
-                            ...taskInputController,
-                            markDate: DateData.timestamp,
-                          });
-                        }
-                      }}
-                    />
-                  </View>
-                </View>
-                <View style={{ marginHorizontal: width * 0.125 }}>
-                  <View
-                    style={{
-                      width: width * 0.75,
-                      marginTop: 50,
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <AppAnalogClock
-                      hour={time.getHours()}
-                      minutes={time.getMinutes()}
-                      seconds={time.getSeconds()}
-                      showSeconds={false}
-                      size={height * 0.3}
-                      onPress={() => {
-                        if (taskInputController.markDate === "") {
-                          scrollForDateTime.current.scrollTo();
-                          ToastAndroid.show(
-                            "Please Select Date",
-                            ToastAndroid.SHORT
-                          );
-                          return;
-                        }
-                        DateTimePickerAndroid.open({
-                          mode: "time",
-                          onChange: (time) => {
-                            // console.log("Changed");
-                            let newTime = new Date(time.nativeEvent.timestamp);
-
-                            setTime(newTime);
+                            setDueDateMarker({
+                              ...dueDateMarker,
+                              [DateData.dateString]: {
+                                selected: true,
+                                marked: true,
+                                selectedColor: "blue",
+                              },
+                            });
                             settaskInputController({
                               ...taskInputController,
-                              markDate: new Date(
-                                taskInputController.markDate
-                              ).setHours(
-                                newTime.getHours(),
-                                newTime.getMinutes(),
-                                1
-                              ),
+                              markDate: DateData.timestamp,
                             });
-                          },
-                          value: new Date(),
-                        });
-                      }}
-                    />
+                          } else {
+                            ToastAndroid.show(
+                              "Please Select a Valid Date",
+                              ToastAndroid.SHORT
+                            );
+                          }
+                        }}
+                      />
+                    </View>
                   </View>
-                </View>
-              </ScrollView>
-              <AppLine />
-            </View>
-            <AppRow>
-              <AppButton
-                style={styles.addFinalizingButton}
-                title="Cancel"
-                onPress={() => {
-                  translateY.value = withTiming(0);
-                  setBottomNavVisible(false);
-                }}
-              />
-              <AppButton
-                style={styles.addFinalizingButton}
-                title="Save"
-                onPress={addTodo}
-              />
-            </AppRow>
-            <Modal
-              animationType="slide"
-              transparent={true}
-              visible={JSON.stringify(editTodo) !== "{}"}
-              onRequestClose={chipModelReqClose}
-            >
-              <View style={styles.centeredView}>
-                <View style={styles.modalView}>
-                  <React.Fragment>
-                    <AppText style={styles.chipModelTitle}>
-                      {editTodo.title !== "" ? "Edit Chip" : "Add Chip"}
-                    </AppText>
-                    <TextInput
-                      placeholder={editTodo.title}
-                      autoFocus={true}
-                      style={styles.chipModelInput}
-                      onChangeText={(newText) => setChipTextController(newText)}
-                    />
-                    <AppRow alignSelf="flex-end">
-                      <AppButton
-                        onPress={chipModelReqClose}
-                        style={styles.chipModelClose}
-                        title="Close"
+                  <View style={{ marginHorizontal: width * 0.125 }}>
+                    <View
+                      style={{
+                        width: width * 0.75,
+                        marginTop: 50,
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <AppAnalogClock
+                        hour={time.getHours()}
+                        minutes={time.getMinutes()}
+                        seconds={time.getSeconds()}
+                        showSeconds={false}
+                        size={height * 0.3}
+                        onPress={() => {
+                          if (taskInputController.markDate === "") {
+                            scrollForDateTime.current.scrollTo();
+                            ToastAndroid.show(
+                              "Please Select Date",
+                              ToastAndroid.SHORT
+                            );
+                            return;
+                          }
+                          DateTimePickerAndroid.open({
+                            mode: "time",
+                            onChange: (time) => {
+                              // console.log("Changed");
+                              let newTime = new Date(
+                                time.nativeEvent.timestamp
+                              );
+
+                              setTime(newTime);
+                              settaskInputController({
+                                ...taskInputController,
+                                markDate: new Date(
+                                  taskInputController.markDate
+                                ).setHours(
+                                  newTime.getHours(),
+                                  newTime.getMinutes(),
+                                  1
+                                ),
+                              });
+                            },
+                            value: new Date(),
+                          });
+                        }}
                       />
-                      <AppButton
-                        onPress={deleteChip}
-                        style={styles.chipModelSave}
-                        title="Delete"
-                      />
-                      <AppButton
-                        onPress={() => saveChipChange(chipTextController)}
-                        style={styles.chipModelSave}
-                        title="Save"
-                      />
-                    </AppRow>
-                  </React.Fragment>
-                </View>
+                    </View>
+                  </View>
+                </ScrollView>
+                <AppLine />
               </View>
-            </Modal>
-            {JSON.stringify(todoObject) !== "{}" ? (
+              <AppRow>
+                <AppButton
+                  style={[
+                    styles.addFinalizingButton,
+                    { width: width * 0.25, marginRight: 15 },
+                  ]}
+                  title="Cancel"
+                  onPress={() => {
+                    translateY.value = withTiming(0);
+                    setBottomNavVisible(false);
+                  }}
+                />
+                <AppButton
+                  style={[
+                    styles.addFinalizingButton,
+                    { width: width * 0.25, marginRight: 10 },
+                  ]}
+                  title="Save"
+                  onPress={addTodo}
+                />
+              </AppRow>
+              <AppSizedBox height={20} width={width} />
               <Modal
                 animationType="slide"
                 transparent={true}
-                visible={JSON.stringify(todoObject) !== "{}"}
-                onRequestClose={closeDetailedView}
+                visible={JSON.stringify(editTodo) !== "{}"}
+                onRequestClose={chipModelReqClose}
               >
                 <View style={styles.centeredView}>
                   <View style={styles.modalView}>
                     <React.Fragment>
-                      <TodoModelRowComponent
-                        heading={"Title"}
-                        value={todoObject.title}
+                      <AppText style={styles.chipModelTitle}>
+                        {editTodo.title !== "" ? "Edit Chip" : "Add Chip"}
+                      </AppText>
+                      <TextInput
+                        placeholder={editTodo.title}
+                        autoFocus={true}
+                        style={styles.chipModelInput}
+                        onChangeText={(newText) =>
+                          setChipTextController(newText)
+                        }
                       />
-                      <TodoModelRowComponent
-                        heading={"Date"}
-                        value={todoObject.date.toString().slice(0, 24)}
-                      />
-                      <TodoModelRowComponent
-                        heading={"Status"}
-                        value={todoObject.completed ? "Completed" : "Pending"}
-                      />
-                      <AppButton
-                        onPress={closeDetailedView}
-                        style={styles.closeModalBtn}
-                        title="Close"
-                      />
+                      <AppRow alignSelf="flex-end">
+                        <AppButton
+                          onPress={chipModelReqClose}
+                          style={styles.chipModelClose}
+                          title="Close"
+                        />
+                        <AppButton
+                          onPress={deleteChip}
+                          style={styles.chipModelSave}
+                          title="Delete"
+                        />
+                        <AppButton
+                          onPress={() => saveChipChange(chipTextController)}
+                          style={styles.chipModelSave}
+                          title="Save"
+                        />
+                      </AppRow>
                     </React.Fragment>
                   </View>
                 </View>
               </Modal>
-            ) : null}
-          </View>
+              {JSON.stringify(todoObject) !== "{}" ? (
+                <Modal
+                  animationType="slide"
+                  transparent={true}
+                  visible={JSON.stringify(todoObject) !== "{}"}
+                  onRequestClose={closeDetailedView}
+                >
+                  <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                      <React.Fragment>
+                        <TodoModelRowComponent
+                          heading={"Title"}
+                          value={todoObject.title}
+                        />
+                        <TodoModelRowComponent
+                          heading={"Date"}
+                          value={todoObject.date.toString().slice(0, 24)}
+                        />
+                        <TodoModelRowComponent
+                          heading={"Status"}
+                          value={todoObject.completed ? "Completed" : "Pending"}
+                        />
+                        <AppButton
+                          onPress={closeDetailedView}
+                          style={styles.closeModalBtn}
+                          title="Close"
+                        />
+                      </React.Fragment>
+                    </View>
+                  </View>
+                </Modal>
+              ) : null}
+            </View>
+          </ScrollView>
         </AppSliderBottomNavBar>
         <Modal
           animationType="fade"
@@ -1021,7 +1021,8 @@ export default function HomePage({ route, navigation }) {
                 <AppText style={styles.modalText}>
                   Hi!! {route.params.name}
                 </AppText>
-                <FontAwesome
+                <AppIcon
+                  iconType="FontAwesome"
                   onPress={closeProfileModel}
                   name="close"
                   size={25}
@@ -1094,9 +1095,12 @@ function PopulateTodos({
   setFetching,
   markCompletedOnToDo,
   deletetodo,
+  noTodoMessage,
+  height,
 }) {
   return todos.length !== 0 ? (
     <FlatList
+      style={{ marginBottom: height * 0.01 }}
       refreshing={fetching}
       onRefresh={() => {
         setFetching(true);
@@ -1119,7 +1123,7 @@ function PopulateTodos({
   ) : (
     <View style={styles.mainContent}>
       <AppText style={styles.loading}>
-        {!fetching ? "No Todos Available" : "Loading..."}
+        {!fetching ? noTodoMessage : "Loading..."}
       </AppText>
     </View>
   );
@@ -1143,9 +1147,8 @@ function TodoModelRowComponent({ heading, value }) {
 const styles = StyleSheet.create({
   analysisBar: { fontSize: 15, fontFamily: "Poppins_600SemiBold" },
   addBar: {
-    width: "87.5%",
     color: colors.white,
-    marginLeft: 20,
+    marginHorizontal: 10,
     fontSize: 25,
     alignSelf: "flex-start",
     fontFamily: "Poppins_400Regular",
@@ -1158,7 +1161,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     overflow: "hidden",
   },
-  addIcon: { borderRadius: 5 },
+  addCategoryIcon: { borderRadius: 5, marginHorizontal: 15 },
   addPressable: {
     marginBottom: 10,
   },
@@ -1169,7 +1172,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   bottomNavContentV2: { alignItems: "center", width: "100%" },
-  bottomNavContentV3: {
+  bottomNavKnob: {
     backgroundColor: colors.white,
     height: 4,
     width: 30,
@@ -1185,10 +1188,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   addFinalizingButton: {
-    width: 80,
-    padding: 10,
+    padding: 8,
     borderRadius: 10,
-    marginHorizontal: 10,
   },
   centeredView: {
     flex: 1,
@@ -1237,7 +1238,7 @@ const styles = StyleSheet.create({
     borderColor: colors.grey,
     borderRadius: 5,
   },
-  loading: { fontSize: 20 },
+  loading: { fontSize: 20, paddingHorizontal: 20 },
   mainContent: {
     flex: 1,
     justifyContent: "center",
