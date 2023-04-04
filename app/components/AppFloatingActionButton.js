@@ -16,13 +16,27 @@ function AppFloatingActionButton({
     borderless: true,
   },
   iconStyle,
+  position,
 }) {
+  let posStyle;
+  switch (position) {
+    case "BottomLeft":
+      posStyle = styles.floatingIconBottomLeft;
+      break;
+    case "TopLeft":
+      posStyle = styles.floatingIconTopLeft;
+      break;
+    case "TopRight":
+      posStyle = styles.floatingIconTopRight;
+      break;
+
+    default:
+      posStyle = styles.floatingIconBottomRight;
+      break;
+  }
+
   return (
-    <Pressable
-      onPress={onPress}
-      style={styles.floatingIcon}
-      android_ripple={rippleConfig}
-    >
+    <Pressable onPress={onPress} style={posStyle} android_ripple={rippleConfig}>
       <AppRoundedIcon
         style={iconStyle}
         name={name}
@@ -35,10 +49,28 @@ function AppFloatingActionButton({
 }
 
 const styles = StyleSheet.create({
-  floatingIcon: {
+  floatingIconBottomRight: {
     position: "absolute",
     bottom: 30,
     right: 30,
+    elevation: 20,
+  },
+  floatingIconTopRight: {
+    position: "absolute",
+    top: 30,
+    right: 30,
+    elevation: 20,
+  },
+  floatingIconTopLeft: {
+    position: "absolute",
+    bottom: 30,
+    left: 30,
+    elevation: 20,
+  },
+  floatingIconBottomLeft: {
+    position: "absolute",
+    bottom: 30,
+    left: 30,
     elevation: 20,
   },
 });

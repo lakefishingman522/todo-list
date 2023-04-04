@@ -15,157 +15,113 @@ import {
 } from "react-native";
 import {
   GestureHandlerRootView,
-  PanGestureHandler,
   ScrollView,
   TapGestureHandler,
 } from "react-native-gesture-handler";
-import Animated, {
+import {
   useSharedValue,
   withSpring,
   useAnimatedGestureHandler,
   runOnJS,
   withTiming,
   Easing,
-  useAnimatedStyle,
-  withDecay,
 } from "react-native-reanimated";
 import "react-native-reanimated";
 import { useFonts, Poppins_400Regular } from "@expo-google-fonts/poppins";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
+import { useDispatch, useSelector, useStore } from "react-redux";
+import { Calendar } from "react-native-calendars";
 
 // Custom Imports
 import colors from "../config/colors";
+import { search, deleteItem } from "../config/utilities";
 import AppToDoList from "../components/AppToDoList";
 import AppBar from "../components/AppBar";
 import AppRoundedIcon from "../components/AppRoundedIcon";
 import AppButton from "../components/AppButton";
-import { search, deleteItem } from "../config/utilities";
 import AppSliderBottomNavBar from "../components/AppSliderBottomNavBar";
 import AppRow from "../components/AppRow";
 import AppChip from "../components/AppChip";
-import { Calendar } from "react-native-calendars";
 import AppText from "../components/AppText";
 import AppSizedBox from "../components/AppSizedBox";
 import AppLine from "../components/AppLine";
 import AppAnalogClock from "../components/AppAnalogClock";
 import AppIcon from "../components/AppIcon";
+import {
+  addTodoCat,
+  createTodo,
+  deleteTodo,
+  deleteTodoCat,
+  editTodoCat,
+  markTodo,
+  selectTodoCat,
+  setTodo,
+  setTodoCat,
+} from "../features/actions";
 
 //Util for Search
-let todosForSearch = { completed: [], pending: [] };
+let todosForSearch = {};
 let tab = 0;
 
 //Tab Navigator
 const Tab = createMaterialTopTabNavigator();
 
-//Reducer Function
-function reducer(state, action) {
-  switch (action.type) {
-    case "setTodos": {
-      return {
-        ...state,
-        completed: action.completed,
-        pending: action.pending,
-      };
-    }
-
-    case "addTodo": {
-      todosForSearch.pending = [action.todo, ...state.pending];
-      return {
-        ...state,
-        pending: [action.todo, ...state.pending],
-      };
-    }
-
-    case "deleteTodo": {
-      if (action.todo.completed) {
-        if (tab)
-          todosForSearch.completed = deleteItem(
-            todosForSearch.completed,
-            action.todo
-          );
-        return {
-          ...state,
-          completed: deleteItem(state.completed, action.todo),
-        };
-      } else {
-        if (!tab)
-          todosForSearch.pending = deleteItem(
-            todosForSearch.pending,
-            action.todo
-          );
-        return {
-          ...state,
-          pending: deleteItem(state.pending, action.todo),
-        };
-      }
-    }
-
-    case "markTodo": {
-      action.todo.completed = !action.todo.completed;
-      if (!action.todo.completed) {
-        todosForSearch = {
-          completed: deleteItem(todosForSearch.completed, action.todo),
-          pending: [action.todo, ...todosForSearch.pending],
-        };
-        return {
-          ...state,
-          completed: deleteItem(state.completed, action.todo),
-          pending: [action.todo, ...state.pending],
-        };
-      } else {
-        todosForSearch = {
-          pending: deleteItem(todosForSearch.pending, action.todo),
-          completed: [action.todo, ...todosForSearch.completed],
-        };
-        return {
-          ...state,
-          pending: deleteItem(state.pending, action.todo),
-          completed: [action.todo, ...state.completed],
-        };
-      }
-    }
-
-    default:
-      break;
-  }
-}
-
 export default function HomePage({ route, navigation }) {
+  //Dispatcher
+  const dispatcher = useDispatch();
+
+  //Selectors
+  const selectTodos = useSelector((state) => state.todo);
+  const selectCategories = useSelector((state) => state.categories);
+
+  let globalCompleted = [];
+  let globalPending = [];
+  Object.keys(selectTodos.completed).filter((key) => {
+    globalCompleted.push(selectTodos.completed[key.toString()]);
+  });
+  Object.keys(selectTodos.pending).filter((key) => {
+    globalPending.push(selectTodos.pending[key.toString()]);
+  });
+
   //States
-  const { height, width } = useWindowDimensions();
+  //Text Controller States
   const [taskInputController, settaskInputController] = useState({
     title: "",
     markDate: "",
   });
   const [taskSearch, settaskSearch] = useState("");
+  const [chipTextController, setChipTextController] = useState("");
   const [fetching, setFetching] = useState(true);
+
+  //Listener States
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [keyboardStatus, setKeyboardStatus] = useState(0);
   const [bottomNavVisible, setBottomNavVisible] = useState(false);
-  const [todoCategories, setTodoCategories] = useState([]);
   const [editTodo, setEditTodo] = useState({});
   const [todoObject, setTodoObject] = useState({});
-  const [chipTextController, setChipTextController] = useState("");
+
+  //Calendar State
   const [dueDateMarker, setDueDateMarker] = useState({});
   const [markedDates, setMarkedDates] = useState({});
   const [agendaList, setAgendaList] = useState([]);
-  const [time, setTime] = useState(new Date());
 
+  //Utils
+  const [time, setTime] = useState(new Date());
+  const { height, width } = useWindowDimensions();
+  let now = new Date().toDateString();
+
+  //Refs
   const isAddOnFocus = useRef();
   const scrollForDateTime = useRef();
   const scrollForBN = useRef();
 
-  const [state, dispatch] = useReducer(reducer, {
-    completed: [],
-    pending: [],
-  });
-
+  //Calculate Marked Dates
   let mem = useMemo(() => {
     if (taskSearch === "") {
       let newAgendaList = [];
-      let newMarkedDates = [...state.completed, ...state.pending].reduce(
+      let newMarkedDates = [...globalCompleted, ...globalPending].reduce(
         (obj, item) => {
           item.date = new Date(item.dueDate).toISOString().slice(0, 10);
           newAgendaList.push(item);
@@ -183,9 +139,7 @@ export default function HomePage({ route, navigation }) {
       setAgendaList(newAgendaList);
       setMarkedDates({ ...newMarkedDates });
     }
-  }, [state]);
-
-  let now = new Date().toDateString();
+  }, [selectTodos]);
 
   //Font Importer
   let [fontsLoaded, error] = useFonts({
@@ -195,34 +149,29 @@ export default function HomePage({ route, navigation }) {
   //Get Todos and Categories
   useEffect(() => {
     async function getTodos() {
-      let completedTodos = [];
-      let pendingTodos = [];
-
       const jsonValue = await AsyncStorage.getItem(
         `@todos_${route.params.userId}`
       );
       const parsedData = JSON.parse(jsonValue);
 
-      if (parsedData && parsedData.completed)
-        completedTodos = parsedData.completed;
-      if (parsedData && parsedData.pending) pendingTodos = parsedData.pending;
-      dispatch({
-        type: "setTodos",
-        completed: completedTodos,
-        pending: pendingTodos,
-      });
-      todosForSearch = {
-        completed: completedTodos,
-        pending: pendingTodos,
-      };
+      dispatcher(setTodo(parsedData));
+      todosForSearch = parsedData;
     }
+
     async function getCategories() {
       const jsonValue = await AsyncStorage.getItem(
         `@todosCategories_${route.params.userId}`
       );
       const parsedData = JSON.parse(jsonValue);
-      if (parsedData) setTodoCategories([...parsedData.categories]);
-      else setTodoCategories([]);
+      if (parsedData) {
+        dispatcher(
+          setTodoCat({
+            objects: parsedData,
+            length: Object.keys(parsedData).length,
+          })
+        );
+      }
+
       setFetching(false);
     }
 
@@ -235,13 +184,15 @@ export default function HomePage({ route, navigation }) {
   //Todos
   useEffect(() => {
     if (!fetching && taskSearch === "") {
+      console.log(selectTodos.completed);
       async function setDB() {
         const jsonValue = JSON.stringify({
-          ...state,
+          ...selectTodos,
         });
         await AsyncStorage.setItem(`@todos_${route.params.userId}`, jsonValue)
           .then((value) => {
             console.log("DB Setted");
+            // console.log(value);
             return 200;
           })
           .catch((err) => {
@@ -256,14 +207,14 @@ export default function HomePage({ route, navigation }) {
 
       setDB();
     }
-  }, [state]);
+  }, [selectTodos]);
 
   //Categories
   useEffect(() => {
     if (!fetching && taskSearch === "") {
       async function setDB() {
         const jsonValue = JSON.stringify({
-          categories: todoCategories,
+          ...selectCategories.objects,
         });
         await AsyncStorage.setItem(
           `@todosCategories_${route.params.userId}`,
@@ -284,7 +235,7 @@ export default function HomePage({ route, navigation }) {
 
       setDB();
     }
-  }, [todoCategories]);
+  }, [selectCategories]);
 
   //Event Listener for KeyBoard
   useEffect(() => {
@@ -314,7 +265,9 @@ export default function HomePage({ route, navigation }) {
         if (lastItem && dueDateMarker[lastItem].selectedColor === "blue")
           delete dueDateMarker[lastItem];
 
-        todoCategories.filter((item) => (item.selected = false));
+        Object.keys(selectCategories.objects).filter(
+          (key) => (selectCategories.objects[key].selected = false)
+        );
         scrollForDateTime.current.scrollTo();
         scrollForBN.current.scrollTo();
       }
@@ -342,18 +295,21 @@ export default function HomePage({ route, navigation }) {
   //Todos
   const searchTodo = (newText) => {
     settaskSearch(newText);
-    if (tab)
-      dispatch({
-        type: "setTodos",
-        completed: search(todosForSearch.completed, newText),
-        pending: state.pending,
-      });
-    else
-      dispatch({
-        type: "setTodos",
-        completed: state.completed,
-        pending: search(todosForSearch.pending, newText),
-      });
+    console.log(todosForSearch.completed);
+    // if (tab)
+    //   dispatcher(
+    //     setTodo({
+    //       completed: search(todosForSearch.completed, newText),
+    //       pending: selectTodos.pending,
+    //     })
+    //   );
+    // else
+    //   dispatcher(
+    //     setTodo({
+    //       completed: selectTodos.completed,
+    //       pending: search(todosForSearch.pending, newText),
+    //     })
+    //   );
   };
 
   const addTodo = async () => {
@@ -379,8 +335,9 @@ export default function HomePage({ route, navigation }) {
     }
 
     let categories = [];
-    todoCategories.filter((item) => {
-      if (item.selected) categories.push(item.title.slice(0, -2));
+    Object.keys(selectCategories.objects).filter((key) => {
+      if (selectCategories.objects[key].selected)
+        categories.push(selectCategories.objects[key].title.slice(2));
     });
 
     if (categories.length === 0) {
@@ -398,10 +355,7 @@ export default function HomePage({ route, navigation }) {
       categories: categories,
     };
 
-    dispatch({
-      type: "addTodo",
-      todo: newTodo,
-    });
+    dispatcher(createTodo({ todo: newTodo }));
 
     translateY.value = withTiming(0);
     setBottomNavVisible(false);
@@ -435,54 +389,33 @@ export default function HomePage({ route, navigation }) {
   };
 
   const editChipOnLongPress = (id) => {
-    for (const iterator of todoCategories) {
-      if (id === iterator.id) {
-        setEditTodo(iterator);
-        return;
-      }
-    }
+    setEditTodo(selectCategories.objects[id]);
   };
 
   const saveChipChange = (newTitle) => {
-    if (newTitle.trim() === "") {
-      ToastAndroid.show("_Enter Chip Name", ToastAndroid.SHORT);
+    if (newTitle.trim() !== "") {
+      editTodo.title = newTitle.trim();
+      setChipTextController("");
+      chipModelReqClose();
+      dispatcher(editTodoCat(editTodo.id.toString(), newTitle.trim()));
       return;
+    } else {
+      ToastAndroid.show("_Enter Chip Name", ToastAndroid.SHORT);
     }
-    todoCategories[editTodo.id - 1].title = editTodo.title = newTitle.trim();
-    setTodoCategories([...todoCategories]);
-    setChipTextController("");
-    chipModelReqClose();
-  };
-
-  const selectChip = (id) => {
-    setTodoCategories(
-      todoCategories.filter((item) => {
-        if (item.id === id) {
-          item.selected = !item.selected;
-        }
-        return item;
-      })
-    );
   };
 
   const createNewChip = () => {
-    let newTodo = {
-      id: todoCategories.length
-        ? todoCategories[todoCategories.length - 1].id + 1
-        : 1,
+    let newCategory = {
+      id: Math.random(),
       title: "",
       selected: true,
     };
-    setTodoCategories([...todoCategories, newTodo]);
-    setEditTodo({ ...newTodo });
+    dispatcher(addTodoCat({ newCategory: newCategory }));
+    setEditTodo({ ...newCategory });
   };
 
   const deleteChip = () => {
-    setTodoCategories(
-      todoCategories.filter((item) => {
-        if (item.id !== editTodo.id) return item;
-      })
-    );
+    dispatcher(deleteTodoCat(editTodo));
     chipModelReqClose();
   };
 
@@ -595,7 +528,7 @@ export default function HomePage({ route, navigation }) {
                     // openProfileModel();
                     navigation.navigate("ProfilePage", {
                       user: route.params,
-                      state: state,
+                      state: selectTodos,
                     });
                   }}
                   style={{ marginLeft: 10, overflow: "hidden" }}
@@ -633,17 +566,17 @@ export default function HomePage({ route, navigation }) {
                       <PopulateTodos
                         height={height}
                         navigation={navigation}
-                        todos={state.pending}
+                        todos={globalPending}
                         fetching={fetching}
                         setFetching={(newValue) => setFetching(newValue)}
-                        deletetodo={async (item) => {
-                          dispatch({ type: "deleteTodo", todo: item });
+                        deletetodo={(item) => {
+                          dispatcher(deleteTodo(item));
                         }}
                         markCompletedOnToDo={(item) => {
-                          dispatch({ type: "markTodo", todo: item });
+                          dispatcher(markTodo(item));
                         }}
                         noTodoMessage={
-                          !state.completed.length && !state.pending.length
+                          !globalCompleted.length && !globalPending.length
                             ? "No Todos Added"
                             : "Wow😊 No Pending Tasks👍"
                         }
@@ -666,17 +599,17 @@ export default function HomePage({ route, navigation }) {
                       <PopulateTodos
                         height={height}
                         navigation={navigation}
-                        todos={state.completed}
+                        todos={globalCompleted}
                         fetching={fetching}
                         setFetching={(newValue) => setFetching(newValue)}
                         deletetodo={(item) => {
-                          dispatch({ type: "deleteTodo", todo: item });
+                          dispatcher(deleteTodo(item));
                         }}
                         markCompletedOnToDo={(item) => {
-                          dispatch({ type: "markTodo", todo: item });
+                          dispatcher(markTodo(item));
                         }}
                         noTodoMessage={
-                          !state.completed.length && !state.pending.length
+                          !globalCompleted.length && !globalPending.length
                             ? "No Todos Added"
                             : "Keep Working💨 Complete Your Tasks👍"
                         }
@@ -758,16 +691,20 @@ export default function HomePage({ route, navigation }) {
                     alignItems: "center",
                   }}
                 >
-                  {todoCategories.length ? (
-                    todoCategories.map((category, index) => (
-                      <Pressable
-                        key={category.id}
-                        onPress={() => selectChip(category.id)}
-                        onLongPress={() => editChipOnLongPress(category.id)}
-                      >
-                        <AppChip data={category} />
-                      </Pressable>
-                    ))
+                  {selectCategories.noOfCategories ? (
+                    Object.keys(selectCategories.objects).map(
+                      (category, index) => (
+                        <Pressable
+                          key={category}
+                          onPress={() => dispatcher(selectTodoCat(category))}
+                          onLongPress={() => editChipOnLongPress(category)}
+                        >
+                          <AppChip
+                            data={selectCategories.objects[category.toString()]}
+                          />
+                        </Pressable>
+                      )
+                    )
                   ) : (
                     <AppText style={{ color: colors.white }}>
                       Create A Chip
@@ -1041,35 +978,35 @@ export default function HomePage({ route, navigation }) {
               </AppRow>
 
               <AppRow>
-                {state.completed.length ? (
+                {globalCompleted.length ? (
                   <View
                     style={[
                       styles.completedBar,
                       {
                         flex:
-                          state.completed.length /
-                          (state.completed.length + state.pending.length),
+                          globalCompleted.length /
+                          (globalCompleted.length + globalPending.length),
                       },
                     ]}
                   >
                     <AppText style={styles.completedText}>
-                      {state.completed.length}
+                      {globalCompleted.length}
                     </AppText>
                   </View>
                 ) : null}
-                {state.pending.length ? (
+                {globalPending.length ? (
                   <View
                     style={[
                       styles.pendingBar,
                       {
                         flex:
-                          state.pending.length /
-                          (state.completed.length + state.pending.length),
+                          globalPending.length /
+                          (globalCompleted.length + globalPending.length),
                       },
                     ]}
                   >
                     <AppText style={styles.pendingText}>
-                      {state.pending.length}
+                      {globalPending.length}
                     </AppText>
                   </View>
                 ) : null}
@@ -1098,6 +1035,12 @@ function PopulateTodos({
   noTodoMessage,
   height,
 }) {
+  // let todos = [];
+  // Object.keys(todoObjects).filter((key) => {
+  //   todos.push(todoObjects[key.toString()]);
+  // });
+  // console.log("Here");
+
   return todos.length !== 0 ? (
     <FlatList
       style={{ marginBottom: height * 0.01 }}

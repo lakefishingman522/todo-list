@@ -57,6 +57,7 @@ const AppTextField = forwardRef(
             }}
             onChangeText={setValue}
             value={value}
+            importantForAutofill="no"
           />
         </View>
       );

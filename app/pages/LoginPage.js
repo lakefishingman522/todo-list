@@ -6,29 +6,39 @@ import {
   StyleSheet,
   ToastAndroid,
   ScrollView,
+  Pressable,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useDispatch, useSelector, useStore } from "react-redux";
 
 // Custom Imports
 import AppTextField from "../components/AppTextField";
 import AppButton from "../components/AppButton";
-import colors from "../config/colors";
-import { Pressable } from "react-native";
 import AppText from "../components/AppText";
+import colors from "../config/colors";
+import { addUser, setCurrentUser, setUser } from "../features/actions";
 
 export default function LoginPage({ navigation }) {
-  //States
-  const { height, width } = useWindowDimensions();
+  //Dispatcher
+  const dispatch = useDispatch();
+
+  //Selectors
+  const selectUsers = useSelector((state) => state.user.users);
+
+  //Form States
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpOTP, setSignUpOTP] = useState("");
-  const [users, setUsers] = useState([]);
-  const [currentTab, setCurrentTab] = useState(0);
   const [showPasswordLogin, setShowPasswordLogin] = useState(0);
   const [showPasswordSignUp, setShowPasswordSignUp] = useState(0);
 
+  //Util States
+  const [currentTab, setCurrentTab] = useState(0);
+  const { height, width } = useWindowDimensions();
+
+  //Refs
   const refLoginInput = useRef(null);
   const refSignUpInput = useRef(null);
 
@@ -44,9 +54,10 @@ export default function LoginPage({ navigation }) {
         await AsyncStorage.getItem("@Users_Array", (err, result) => {
           if (err) return;
           else {
-            if (result === null) setUsers([]);
-            else setUsers(JSON.parse(result).Users);
-            gotUsers = true;
+            if (result !== null) {
+              dispatch(setUser({ users: JSON.parse(result).Users }));
+              gotUsers = true;
+            }
           }
         });
       }
@@ -65,14 +76,14 @@ export default function LoginPage({ navigation }) {
   const switchTab = (tab) => {
     if (tab != currentTab) {
       if (tab) {
-        setLoginEmail("");
-        setLoginPassword("");
-        setShowPasswordLogin(0);
+        if (loginEmail) setLoginEmail("");
+        if (loginPassword) setLoginPassword("");
+        if (showPasswordLogin) setShowPasswordLogin(0);
       } else {
-        setSignUpEmail("");
-        setSignUpPassword("");
-        setSignUpOTP("");
-        setShowPasswordSignUp(0);
+        if (signUpEmail) setSignUpEmail("");
+        if (signUpPassword) setSignUpPassword("");
+        if (signUpOTP) setSignUpOTP("");
+        if (showPasswordCall) setShowPasswordSignUp(0);
       }
       setCurrentTab(tab);
     }
@@ -83,21 +94,123 @@ export default function LoginPage({ navigation }) {
     else setShowPasswordSignUp(showPasswordSignUp ^ 1);
   };
 
+  const handleLogin = async () => {
+    if (loginEmail.trim() === "") {
+      ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
+      return;
+    }
+    if (loginPassword.trim() === "") {
+      ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
+      return;
+    }
+
+    let ourUser = { name: "" };
+    Object.keys(selectUsers).filter((key) => {
+      if (
+        selectUsers[key.toString()].email.toLowerCase() ===
+          loginEmail.toLowerCase() &&
+        selectUsers[key.toString()].password === loginPassword
+      )
+        ourUser = selectUsers[key];
+    });
+
+    // console.log(ourUser);
+
+    if (ourUser.name === "")
+      ToastAndroid.show("Invalid Credenials", ToastAndroid.SHORT);
+    else {
+      setLoginEmail("");
+      setLoginPassword("");
+      setShowPasswordLogin(0);
+      dispatch(setCurrentUser({ user: ourUser }));
+      navigation.navigate("HomePage", ourUser);
+    }
+
+    // await AsyncStorage.setItem(
+    //   `@todosCategories_0.18565659353231381679620611913`,
+    //   JSON.stringify(cat)
+    // ).then((v) => {
+    //   console.log("Done");
+    // });
+  };
+
+  const handleRegister = async () => {
+    if (signUpEmail.trim() === "") {
+      ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
+      return;
+    }
+    if (signUpPassword.trim() === "") {
+      ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
+      return;
+    }
+
+    let alreadyResgistered = false;
+    for (const key in selectUsers) {
+      if (selectUsers[key].email === signUpEmail.toLowerCase()) {
+        ToastAndroid.show("User Already Registered", ToastAndroid.SHORT);
+        alreadyResgistered = true;
+        break;
+      }
+    }
+    if (alreadyResgistered) return;
+
+    let pattern = /^[\w\.]+@gmail\.com$/g;
+    if (signUpEmail.match(pattern) === null) {
+      ToastAndroid.show("Invalid Email", ToastAndroid.SHORT);
+      return;
+    }
+
+    let userName = signUpEmail.substring(0, signUpEmail.indexOf("@"));
+
+    let newId = Math.random() * Math.random() + "" + Date.now();
+    let newUser = {
+      name: userName[0].toUpperCase() + userName.substring(1),
+      email: signUpEmail.toLowerCase(),
+      password: signUpPassword,
+      userId: newId,
+    };
+
+    let dataUsers = {};
+    dataUsers[newId] = newUser;
+    const jsonValue = JSON.stringify({
+      Users: { ...selectUsers, ...dataUsers },
+    });
+
+    dispatch(
+      addUser({
+        user: newUser,
+      })
+    );
+
+    let error = false;
+    await AsyncStorage.mergeItem("@Users_Array", jsonValue, (err) => {
+      if (err) {
+        error = true;
+        ToastAndroid.show(
+          "Somethong went wrong, Try Again",
+          ToastAndroid.SHORT
+        );
+        return;
+      }
+    });
+
+    if (!error) {
+      ToastAndroid.show("Registeration Successful", ToastAndroid.SHORT);
+      switchTab(0);
+    }
+  };
+
   return (
     <ScrollView style={styles.scrollView}>
       <View style={[styles.container, { height: height * 1.05 }]}>
-        <View style={styles.upperSphere}></View>
-        <View style={styles.lowerSphere}></View>
+        <View style={styles.upperSphere} />
+        <View style={styles.lowerSphere} />
         <View
           style={[styles.card, { top: height * tabMul, left: width * 0.075 }]}
         >
           <View style={styles.header}>
             <Pressable
               onPress={() => {
-                if (signUpEmail !== "") setSignUpEmail("");
-                if (signUpPassword !== "") setSignUpPassword("");
-                if (signUpOTP !== "") setSignUpOTP("");
-
                 switchTab(0);
               }}
             >
@@ -112,9 +225,6 @@ export default function LoginPage({ navigation }) {
             <AppText style={styles.expander}></AppText>
             <Pressable
               onPress={() => {
-                if (loginEmail !== "") setLoginEmail("");
-                if (loginPassword !== "") setLoginPassword("");
-
                 switchTab(1);
               }}
             >
@@ -150,33 +260,7 @@ export default function LoginPage({ navigation }) {
               <AppButton
                 style={styles.loginButton}
                 title="Login"
-                onPress={() => {
-                  if (loginEmail.trim() === "") {
-                    ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
-                    return;
-                  }
-                  if (loginPassword.trim() === "") {
-                    ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
-                    return;
-                  }
-
-                  let ourUser = { name: "" };
-                  users.forEach((user) => {
-                    if (
-                      user.email.toLowerCase() === loginEmail.toLowerCase() &&
-                      user.password === loginPassword
-                    )
-                      ourUser = user;
-                  });
-                  if (ourUser.name === "")
-                    ToastAndroid.show("Invalid Credenials", ToastAndroid.SHORT);
-                  else {
-                    setLoginEmail("");
-                    setLoginPassword("");
-                    setShowPasswordLogin(0);
-                    navigation.navigate("HomePage", ourUser);
-                  }
-                }}
+                onPress={handleLogin}
               ></AppButton>
             </View>
           ) : (
@@ -208,75 +292,7 @@ export default function LoginPage({ navigation }) {
               <AppButton
                 style={styles.loginButton}
                 title="Register"
-                onPress={async () => {
-                  if (signUpEmail.trim() === "") {
-                    ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
-                    return;
-                  }
-                  if (signUpPassword.trim() === "") {
-                    ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
-                    return;
-                  }
-
-                  let alreadyResgistered = false;
-                  for (const user of users) {
-                    if (user.email === signUpEmail.toLowerCase()) {
-                      ToastAndroid.show(
-                        "User Already Registered",
-                        ToastAndroid.SHORT
-                      );
-                      alreadyResgistered = true;
-                      break;
-                    }
-                  }
-                  if (alreadyResgistered) return;
-
-                  let pattern = /^[\w\.]+@gmail\.com$/g;
-                  if (signUpEmail.match(pattern) === null) {
-                    ToastAndroid.show("Invalid Email", ToastAndroid.SHORT);
-                    return;
-                  }
-
-                  let userName = signUpEmail.substring(
-                    0,
-                    signUpEmail.indexOf("@")
-                  );
-
-                  let newUser = {
-                    name: userName[0].toUpperCase() + userName.substring(1),
-                    email: signUpEmail.toLowerCase(),
-                    password: signUpPassword,
-                    userId: Math.random() * Math.random() + "" + Date.now(),
-                  };
-                  users.push(newUser);
-
-                  const jsonValue = JSON.stringify({ Users: users });
-
-                  let error = false;
-                  await AsyncStorage.mergeItem(
-                    "@Users_Array",
-                    jsonValue,
-                    (err) => {
-                      if (err) {
-                        error = true;
-                        ToastAndroid.show(
-                          "Somethong went wrong, Try Again",
-                          ToastAndroid.SHORT
-                        );
-                        return;
-                      }
-                    }
-                  );
-
-                  if (!error) {
-                    ToastAndroid.show(
-                      "Registeration Successful",
-                      ToastAndroid.SHORT
-                    );
-                    setUsers([...users]);
-                    switchTab(0);
-                  }
-                }}
+                onPress={handleRegister}
               />
             </View>
           )}

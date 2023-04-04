@@ -8,6 +8,7 @@ import {
   View,
   Pressable,
   ScrollView,
+  Alert,
 } from "react-native";
 
 // Custom Imports
@@ -158,7 +159,9 @@ function ProfilePage({ navigation, route }) {
                     text: "No",
                   },
                   {
-                    onPress: () => {},
+                    onPress: () => {
+                      navigation.popToTop();
+                    },
                     text: "Yes",
                   },
                 ]);

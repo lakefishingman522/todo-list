@@ -100,7 +100,7 @@ export default function AppToDoList({
   const animatedStyletoShowDetails = useAnimatedStyle(() => {
     return {
       height: height.value,
-      width: vw * 0.9,
+      width: vw * 0.85,
     };
   });
   const [isAnimating, setIsAnimating] = useState(false);
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     paddingTop: 15,
     justifyContent: "space-around",
     marginVertical: 16,
-    marginHorizontal: 20,
+    marginHorizontal: 30,
     borderRadius: 10,
     backgroundColor: colors.white,
     elevation: 10,
