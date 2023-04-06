@@ -38,37 +38,13 @@ export default function AppToDoList({
   let createDateString = createdDate.toISOString().slice(0, 10);
 
   let dueTimeString = dueDate.toString().slice(16, 21);
-  let emote = "";
+  let emote = "📝";
 
-  switch (data.categories[0]) {
-    case "Meeting":
-      emote += "🤝\n";
-      break;
+  // console.log(data);
+  const withEmojis = /\p{Extended_Pictographic}/u;
 
-    case "Review":
-      emote += "📈\n";
-      break;
-
-    case "Marketing":
-      emote += "🔊\n";
-      break;
-
-    case "Design Project":
-      emote += "🎨\n";
-      break;
-
-    case "College":
-      emote += "🎓\n";
-      break;
-
-    case "Movie":
-      emote += "🍿\n";
-      break;
-
-    default:
-      emote += "📝";
-      break;
-  }
+  if (withEmojis.test(data.categories[0].slice(0, 2)))
+    emote = data.categories[0].slice(0, 2);
 
   // Slide To Delete
   const translateX = useSharedValue(0);

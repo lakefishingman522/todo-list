@@ -1,5 +1,5 @@
 // Default or Third Party Library Imports
-import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Platform,
   StyleSheet,
@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
   Pressable,
   ToastAndroid,
+  Image,
 } from "react-native";
 import {
   GestureHandlerRootView,
@@ -31,7 +32,7 @@ import { useFonts, Poppins_400Regular } from "@expo-google-fonts/poppins";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
-import { useDispatch, useSelector, useStore } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Calendar } from "react-native-calendars";
 
 // Custom Imports
@@ -51,6 +52,7 @@ import AppAnalogClock from "../components/AppAnalogClock";
 import AppIcon from "../components/AppIcon";
 import {
   addTodoCat,
+  resetTodoState,
   createTodo,
   deleteTodo,
   deleteTodoCat,
@@ -59,7 +61,10 @@ import {
   selectTodoCat,
   setTodo,
   setTodoCat,
+  resetCategoriesState,
 } from "../features/actions";
+import { useIsFocused } from "@react-navigation/native";
+import { ActivityIndicator } from "react-native-paper";
 
 //Util for Search
 let todosForSearch = {};
@@ -75,15 +80,7 @@ export default function HomePage({ route, navigation }) {
   //Selectors
   const selectTodos = useSelector((state) => state.todo);
   const selectCategories = useSelector((state) => state.categories);
-
-  let globalCompleted = [];
-  let globalPending = [];
-  Object.keys(selectTodos.completed).filter((key) => {
-    globalCompleted.push(selectTodos.completed[key.toString()]);
-  });
-  Object.keys(selectTodos.pending).filter((key) => {
-    globalPending.push(selectTodos.pending[key.toString()]);
-  });
+  const currentUser = useSelector((state) => state.user.currentUser);
 
   //States
   //Text Controller States
@@ -93,12 +90,14 @@ export default function HomePage({ route, navigation }) {
   });
   const [taskSearch, settaskSearch] = useState("");
   const [chipTextController, setChipTextController] = useState("");
-  const [fetching, setFetching] = useState(true);
+  const [fetching, setFetching] = useState();
 
   //Listener States
-  const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [keyboardStatus, setKeyboardStatus] = useState(0);
   const [bottomNavVisible, setBottomNavVisible] = useState(false);
+  const isFocused = useIsFocused();
+
+  //Model States
   const [editTodo, setEditTodo] = useState({});
   const [todoObject, setTodoObject] = useState({});
 
@@ -111,6 +110,14 @@ export default function HomePage({ route, navigation }) {
   const [time, setTime] = useState(new Date());
   const { height, width } = useWindowDimensions();
   let now = new Date().toDateString();
+  let globalCompleted = [];
+  let globalPending = [];
+  Object.keys(selectTodos.completed).filter((key) => {
+    globalCompleted.push(selectTodos.completed[key.toString()]);
+  });
+  Object.keys(selectTodos.pending).filter((key) => {
+    globalPending.push(selectTodos.pending[key.toString()]);
+  });
 
   //Refs
   const isAddOnFocus = useRef();
@@ -118,7 +125,7 @@ export default function HomePage({ route, navigation }) {
   const scrollForBN = useRef();
 
   //Calculate Marked Dates
-  let mem = useMemo(() => {
+  useMemo(() => {
     if (taskSearch === "") {
       let newAgendaList = [];
       let newMarkedDates = [...globalCompleted, ...globalPending].reduce(
@@ -149,18 +156,21 @@ export default function HomePage({ route, navigation }) {
   //Get Todos and Categories
   useEffect(() => {
     async function getTodos() {
+      console.log("Get Data Called");
       const jsonValue = await AsyncStorage.getItem(
-        `@todos_${route.params.userId}`
+        `@todos_${currentUser.userId}`
       );
       const parsedData = JSON.parse(jsonValue);
 
-      dispatcher(setTodo(parsedData));
+      if (parsedData) dispatcher(setTodo(parsedData));
+      else dispatcher(setTodo({ completed: {}, pending: {} }));
+
       todosForSearch = parsedData;
     }
 
     async function getCategories() {
       const jsonValue = await AsyncStorage.getItem(
-        `@todosCategories_${route.params.userId}`
+        `@todosCategories_${currentUser.userId}`
       );
       const parsedData = JSON.parse(jsonValue);
       if (parsedData) {
@@ -170,29 +180,36 @@ export default function HomePage({ route, navigation }) {
             length: Object.keys(parsedData).length,
           })
         );
+      } else {
+        dispatcher(
+          setTodoCat({
+            objects: {},
+            length: 0,
+          })
+        );
       }
-
-      setFetching(false);
     }
 
-    getTodos();
-    getCategories();
-  }, []);
+    if (!selectTodos.isFetched) {
+      getTodos();
+    }
+    if (!selectCategories.isFetched) {
+      getCategories();
+    }
+  }, [isFocused]);
 
   //DB Setters
 
   //Todos
   useEffect(() => {
     if (!fetching && taskSearch === "") {
-      console.log(selectTodos.completed);
       async function setDB() {
         const jsonValue = JSON.stringify({
           ...selectTodos,
         });
-        await AsyncStorage.setItem(`@todos_${route.params.userId}`, jsonValue)
+        await AsyncStorage.setItem(`@todos_${currentUser.userId}`, jsonValue)
           .then((value) => {
             console.log("DB Setted");
-            // console.log(value);
             return 200;
           })
           .catch((err) => {
@@ -204,8 +221,7 @@ export default function HomePage({ route, navigation }) {
             return 400;
           });
       }
-
-      setDB();
+      if (selectTodos.isFetched) setDB();
     }
   }, [selectTodos]);
 
@@ -217,7 +233,7 @@ export default function HomePage({ route, navigation }) {
           ...selectCategories.objects,
         });
         await AsyncStorage.setItem(
-          `@todosCategories_${route.params.userId}`,
+          `@todosCategories_${currentUser.userId}`,
           jsonValue
         )
           .then((value) => {
@@ -233,7 +249,7 @@ export default function HomePage({ route, navigation }) {
           });
       }
 
-      setDB();
+      if (selectTodos.isFetched) setDB();
     }
   }, [selectCategories]);
 
@@ -284,6 +300,9 @@ export default function HomePage({ route, navigation }) {
           easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
         setBottomNavVisible(false);
+      } else {
+        dispatcher(resetTodoState());
+        dispatcher(resetCategoriesState());
       }
     });
 
@@ -295,21 +314,20 @@ export default function HomePage({ route, navigation }) {
   //Todos
   const searchTodo = (newText) => {
     settaskSearch(newText);
-    console.log(todosForSearch.completed);
-    // if (tab)
-    //   dispatcher(
-    //     setTodo({
-    //       completed: search(todosForSearch.completed, newText),
-    //       pending: selectTodos.pending,
-    //     })
-    //   );
-    // else
-    //   dispatcher(
-    //     setTodo({
-    //       completed: selectTodos.completed,
-    //       pending: search(todosForSearch.pending, newText),
-    //     })
-    //   );
+    if (tab)
+      dispatcher(
+        setTodo({
+          completed: search(todosForSearch.completed, newText),
+          pending: selectTodos.pending,
+        })
+      );
+    else
+      dispatcher(
+        setTodo({
+          completed: selectTodos.completed,
+          pending: search(todosForSearch.pending, newText),
+        })
+      );
   };
 
   const addTodo = async () => {
@@ -336,8 +354,10 @@ export default function HomePage({ route, navigation }) {
 
     let categories = [];
     Object.keys(selectCategories.objects).filter((key) => {
-      if (selectCategories.objects[key].selected)
-        categories.push(selectCategories.objects[key].title.slice(2));
+      // console.log(selectCategories.objects[key].selected);
+      if (selectCategories.objects[key].selected) {
+        categories.push(selectCategories.objects[key].title);
+      }
     });
 
     if (categories.length === 0) {
@@ -346,7 +366,7 @@ export default function HomePage({ route, navigation }) {
     }
 
     let newTodo = {
-      userId: route.params.userId,
+      userId: currentUser.userId,
       id: Math.random(),
       title: taskInputController.title.trim(),
       completed: false,
@@ -369,13 +389,6 @@ export default function HomePage({ route, navigation }) {
     });
   };
 
-  //Profile Model
-  const openProfileModel = () => setProfileModalVisible(true);
-
-  const closeProfileModel = () => setProfileModalVisible(false);
-
-  const profileModelReqClose = () => setToDoModalVisible(!profileModalVisible);
-
   //Calendar Todo Shower
   const closeDetailedView = () => setTodoObject({});
 
@@ -386,10 +399,6 @@ export default function HomePage({ route, navigation }) {
       return;
     }
     setEditTodo({});
-  };
-
-  const editChipOnLongPress = (id) => {
-    setEditTodo(selectCategories.objects[id]);
   };
 
   const saveChipChange = (newTitle) => {
@@ -416,7 +425,7 @@ export default function HomePage({ route, navigation }) {
 
   const deleteChip = () => {
     dispatcher(deleteTodoCat(editTodo));
-    chipModelReqClose();
+    setEditTodo({});
   };
 
   //Gesture Handlers
@@ -443,7 +452,7 @@ export default function HomePage({ route, navigation }) {
     },
   });
 
-  if (fontsLoaded)
+  if (fontsLoaded && isFocused)
     return (
       <GestureHandlerRootView style={styles.container}>
         <TapGestureHandler
@@ -484,9 +493,7 @@ export default function HomePage({ route, navigation }) {
                 size={32}
                 color="black"
                 disabled={bottomNavVisible}
-                onPress={() => {
-                  navigation.navigate("AgendaPage", agendaList);
-                }}
+                onPress={() => navigation.navigate("AgendaPage", agendaList)}
               />
             </AppRow>
             <AppBar
@@ -503,7 +510,8 @@ export default function HomePage({ route, navigation }) {
                   placeholder={"Search..."}
                   placeholderTextColor={"#FFFFF0"}
                 />
-                {(keyboardStatus || taskSearch != "") &&
+                {keyboardStatus &&
+                taskSearch != "" &&
                 !isAddOnFocus.current.isFocused() ? (
                   <AppSizedBox width={30} height={20}>
                     <AppIcon
@@ -519,20 +527,28 @@ export default function HomePage({ route, navigation }) {
                 ) : (
                   <AppSizedBox width={20} height={20} />
                 )}
-                <AppRoundedIcon
-                  name="user"
-                  size={50}
-                  iconColor={colors.primary}
-                  backgroundColor={colors.white}
-                  onPress={() => {
-                    // openProfileModel();
-                    navigation.navigate("ProfilePage", {
-                      user: route.params,
-                      state: selectTodos,
-                    });
-                  }}
-                  style={{ marginLeft: 10, overflow: "hidden" }}
-                />
+
+                {!currentUser.profileImage && isFocused ? (
+                  <AppRoundedIcon
+                    name="user"
+                    size={50}
+                    iconColor={colors.primary}
+                    backgroundColor={colors.white}
+                    onPress={() => navigation.navigate("ProfilePage")}
+                    style={{ marginLeft: 10, overflow: "hidden" }}
+                  />
+                ) : (
+                  <Pressable onPress={() => navigation.navigate("ProfilePage")}>
+                    <Image
+                      source={{ uri: currentUser.profileImage }}
+                      style={{
+                        width: height * 0.07,
+                        height: height * 0.07,
+                        borderRadius: height * 0.035,
+                      }}
+                    />
+                  </Pressable>
+                )}
               </View>
             </AppBar>
             <View
@@ -567,7 +583,9 @@ export default function HomePage({ route, navigation }) {
                         height={height}
                         navigation={navigation}
                         todos={globalPending}
-                        fetching={fetching}
+                        fetching={
+                          selectTodos.isFetched && selectCategories.isFetched
+                        }
                         setFetching={(newValue) => setFetching(newValue)}
                         deletetodo={(item) => {
                           dispatcher(deleteTodo(item));
@@ -600,7 +618,9 @@ export default function HomePage({ route, navigation }) {
                         height={height}
                         navigation={navigation}
                         todos={globalCompleted}
-                        fetching={fetching}
+                        fetching={
+                          selectTodos.isFetched && selectCategories.isFetched
+                        }
                         setFetching={(newValue) => setFetching(newValue)}
                         deletetodo={(item) => {
                           dispatcher(deleteTodo(item));
@@ -697,7 +717,9 @@ export default function HomePage({ route, navigation }) {
                         <Pressable
                           key={category}
                           onPress={() => dispatcher(selectTodoCat(category))}
-                          onLongPress={() => editChipOnLongPress(category)}
+                          onLongPress={() =>
+                            setEditTodo(selectCategories.objects[category])
+                          }
                         >
                           <AppChip
                             data={selectCategories.objects[category.toString()]}
@@ -926,100 +948,6 @@ export default function HomePage({ route, navigation }) {
             </View>
           </ScrollView>
         </AppSliderBottomNavBar>
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={profileModalVisible}
-          onRequestClose={profileModelReqClose}
-        >
-          <View
-            style={[
-              styles.centeredView,
-              {
-                justifyContent: "flex-start",
-                alignItems: "flex-end",
-                marginTop: height * 0.205,
-              },
-            ]}
-          >
-            <View
-              style={[styles.profileTriangle, { marginRight: width * 0.11 }]}
-            />
-            <View
-              style={[
-                styles.modalView,
-                {
-                  width: width * 0.9,
-                  alignSelf: "center",
-                },
-              ]}
-            >
-              <AppRow justifyContent="space-between">
-                <AppText style={styles.modalText}>
-                  Hi!! {route.params.name}
-                </AppText>
-                <AppIcon
-                  iconType="FontAwesome"
-                  onPress={closeProfileModel}
-                  name="close"
-                  size={25}
-                  style={{
-                    paddingLeft: 20,
-                    paddingRight: 10,
-                    paddingBottom: 20,
-                  }}
-                  color={colors.black}
-                />
-              </AppRow>
-
-              <AppRow justifyContent="space-between">
-                <AppText style={styles.analysisBar}>Completed</AppText>
-                <AppText style={styles.analysisBar}>Pending</AppText>
-              </AppRow>
-
-              <AppRow>
-                {globalCompleted.length ? (
-                  <View
-                    style={[
-                      styles.completedBar,
-                      {
-                        flex:
-                          globalCompleted.length /
-                          (globalCompleted.length + globalPending.length),
-                      },
-                    ]}
-                  >
-                    <AppText style={styles.completedText}>
-                      {globalCompleted.length}
-                    </AppText>
-                  </View>
-                ) : null}
-                {globalPending.length ? (
-                  <View
-                    style={[
-                      styles.pendingBar,
-                      {
-                        flex:
-                          globalPending.length /
-                          (globalCompleted.length + globalPending.length),
-                      },
-                    ]}
-                  >
-                    <AppText style={styles.pendingText}>
-                      {globalPending.length}
-                    </AppText>
-                  </View>
-                ) : null}
-              </AppRow>
-
-              <AppButton
-                onPress={navigation.goBack}
-                style={[styles.closeModalBtn, { width: "30%", marginTop: 20 }]}
-                title="Log Out"
-              />
-            </View>
-          </View>
-        </Modal>
       </GestureHandlerRootView>
     );
 }
@@ -1035,20 +963,14 @@ function PopulateTodos({
   noTodoMessage,
   height,
 }) {
-  // let todos = [];
-  // Object.keys(todoObjects).filter((key) => {
-  //   todos.push(todoObjects[key.toString()]);
-  // });
-  // console.log("Here");
-
-  return todos.length !== 0 ? (
+  return todos.length ? (
     <FlatList
       style={{ marginBottom: height * 0.01 }}
-      refreshing={fetching}
+      refreshing={!fetching}
       onRefresh={() => {
-        setFetching(true);
+        // setFetching(true);
         // setTodos([...todos]);
-        setFetching(false);
+        // setFetching(false);
       }}
       data={todos}
       keyExtractor={(item) => item.id}
@@ -1065,9 +987,15 @@ function PopulateTodos({
     />
   ) : (
     <View style={styles.mainContent}>
-      <AppText style={styles.loading}>
-        {!fetching ? noTodoMessage : "Loading..."}
-      </AppText>
+      {fetching ? (
+        <AppText style={styles.loading}>{noTodoMessage}</AppText>
+      ) : (
+        <ActivityIndicator
+          animating={!fetching}
+          color={colors.primary}
+          size={50}
+        />
+      )}
     </View>
   );
 }

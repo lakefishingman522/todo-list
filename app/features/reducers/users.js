@@ -1,9 +1,16 @@
-import { ADD_USER, EDIT_USER, SET_CURRENT_USER, SET_USER } from "../actions";
+import {
+  ADD_USER,
+  EDIT_USER,
+  FETCH_REQ_FAILED,
+  SET_CURRENT_USER,
+  SET_USER,
+} from "../actions";
 
 //Initial State
 const initialState = {
   users: {},
   currentUser: {},
+  isFetched: false,
 };
 
 //user Reducer
@@ -22,6 +29,7 @@ export default function (state = initialState, action) {
       return {
         ...state,
         users: { ...action.payload.users },
+        isFetched: true,
       };
     }
     case SET_CURRENT_USER: {
@@ -30,6 +38,11 @@ export default function (state = initialState, action) {
         currentUser: action.payload.user,
       };
     }
+    // case FETCH_REQ_FAILED:
+    //   return {
+    //     ...state,
+    //     isFetched: false,
+    //   };
     default:
       return state;
   }

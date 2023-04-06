@@ -1,19 +1,35 @@
-import { SET_TODO, ADD_TODO, DELETE_TODO, MARK_TODO } from "../actions";
+import {
+  SET_TODO,
+  ADD_TODO,
+  DELETE_TODO,
+  MARK_TODO,
+  RESET_TODO,
+} from "../actions";
 
 //Initial State
 const initialState = {
   completed: {},
   pending: {},
+  isFetched: false,
 };
 
 //todo Reducer
 export default function (state = initialState, action) {
   switch (action.type) {
+    case RESET_TODO: {
+      return {
+        ...state,
+        completed: {},
+        pending: {},
+        isFetched: false,
+      };
+    }
     case SET_TODO: {
       return {
         ...state,
         completed: action.payload.completed,
         pending: action.payload.pending,
+        isFetched: true,
       };
     }
     case ADD_TODO: {

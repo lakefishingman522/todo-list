@@ -4,12 +4,14 @@ export const MARK_TODO = "MARK_TODO";
 export const DELETE_TODO = "DELETE_TODO";
 export const ADD_TODO = "ADD_TODO";
 export const SET_TODO = "SET_TODO";
+export const RESET_TODO = "RESET_TODO";
 
 //users
 export const ADD_USER = "ADD_USER";
 export const EDIT_USER = "EDIT_USER";
 export const SET_USER = "SET_USER";
 export const SET_CURRENT_USER = "SET_CURRENT_USER";
+export const FETCH_USER = "FETCH_USER";
 
 //categories
 export const ADD_TODO_CAT = "ADD_TODO_CAT";
@@ -17,6 +19,7 @@ export const EDIT_TODO_CAT = "EDIT_TODO_CAT";
 export const DELETE_TODO_CAT = "DELETE_TODO_CAT";
 export const SET_TODO_CAT = "SET_TODO_CAT";
 export const SELECT_TODO_CAT = "SELECT_TODO_CAT";
+export const RESET_CATEGORY = "RESET_CATEGORY";
 
 //Action Creater
 //todos
@@ -40,6 +43,10 @@ export const deleteTodo = (dItem) => ({
   payload: { todo: dItem },
 });
 
+export const resetTodoState = () => ({
+  type: RESET_TODO,
+});
+
 //users
 export const addUser = (content) => ({
   type: ADD_USER,
@@ -59,6 +66,10 @@ export const setUser = (content) => ({
 export const setCurrentUser = (content) => ({
   type: SET_CURRENT_USER,
   payload: content,
+});
+
+export const fetchUser = () => ({
+  type: FETCH_USER,
 });
 
 //categories
@@ -88,4 +99,8 @@ export const setTodoCat = (content) => ({
 export const selectTodoCat = (id) => ({
   type: SELECT_TODO_CAT,
   payload: id,
+});
+
+export const resetCategoriesState = () => ({
+  type: RESET_CATEGORY,
 });

@@ -9,7 +9,12 @@ import {
   Pressable,
   ScrollView,
   Alert,
+  Image,
+  Modal,
+  TouchableOpacity,
 } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
+import { useIsFocused } from "@react-navigation/native";
 
 // Custom Imports
 import colors from "../config/colors";
@@ -19,161 +24,299 @@ import AppIcon from "../components/AppIcon";
 import AppBar from "../components/AppBar";
 import AppChip from "../components/AppChip";
 import AppRoundedIcon from "../components/AppRoundedIcon";
+import AppAvatar from "../components/AppAvatar";
+import AppLine from "../components/AppLine";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import {
+  resetCategoriesState,
+  resetTodoState,
+  setCurrentUser,
+} from "../features/actions";
 
 function ProfilePage({ navigation, route }) {
   const { width, height } = useWindowDimensions();
+  const currentUser = useSelector((state) => state.user.currentUser);
+  const users = useSelector((state) => state.user.users);
+  const dispatcher = useDispatch();
 
   const [statusChips, setStatusChips] = useState([
     { id: 1, title: "🎯 Active", selected: true },
     { id: 2, title: "😴 Away", selected: false },
   ]);
+  const [changeAccModelVisible, setChangeAccModelVisible] = useState(false);
 
-  return (
-    <ScrollView style={[styles.container, { width: width, height: height }]}>
-      <View>
-        <AppBar
-          name="chevron-back"
-          size={32}
-          color="black"
-          iconType="Ionicons"
-          barStyle={{
-            backgroundColor: "transparent",
-          }}
-          onPressIcon={() => {
-            navigation.goBack();
-          }}
+  const isFocused = useIsFocused();
+
+  if (isFocused) {
+    return (
+      <GestureHandlerRootView>
+        <ScrollView
+          style={[styles.container, { width: width, height: height }]}
         >
-          <View
-            style={{ flex: 1, alignItems: "flex-end", paddingRight: "37%" }}
-          >
-            <AppText style={styles.pageTitle}>My Profile</AppText>
-          </View>
-        </AppBar>
-        <AppRow
-          justifyContent="space-around"
-          alignItems="center"
-          style={styles.card}
-        >
-          <View
-            style={[
-              styles.circleAvatar,
-              {
-                width: height * 0.14,
-                height: height * 0.14,
-                borderRadius: (height * 0.14) / 2,
-              },
-            ]}
-          ></View>
           <View>
-            <AppText
-              style={{
-                fontFamily: "Poppins_600SemiBold",
-                fontSize: 20 / PixelRatio.getFontScale(),
-                width: width * 0.35,
+            <AppBar
+              name="chevron-back"
+              size={32}
+              color="black"
+              iconType="Ionicons"
+              barStyle={{
+                backgroundColor: "transparent",
               }}
-              numberOfLines={1}
-            >
-              {route.params.user.name}
-            </AppText>
-            <AppText
-              style={{
-                color: colors.grey,
-                fontSize: 14 / PixelRatio.getFontScale(),
+              onPressIcon={() => {
+                navigation.goBack();
               }}
             >
-              Set Profession
-            </AppText>
-          </View>
-          <AppIcon
-            iconType="Feather"
-            style={{ paddingRight: width * 0.01 }}
-            name="edit"
-            size={30 / PixelRatio.getFontScale()}
-            color="black"
-            onPress={() => {
-              navigation.navigate("EditProfilePage", route.params.user);
-            }}
-          />
-        </AppRow>
-        <View style={styles.menu}>
-          <AppText style={styles.menuTitle}>My Status</AppText>
-          <AppRow>
-            {statusChips.map((chip, index) => {
-              return (
-                <Pressable
-                  key={index}
-                  onPress={() => {
-                    setStatusChips(
-                      statusChips.filter((c) => {
-                        if (chip.id === c.id) c.selected = true;
-                        else c.selected = false;
-
-                        return c;
-                      })
-                    );
+              <View
+                style={{ flex: 1, alignItems: "flex-end", paddingRight: "37%" }}
+              >
+                <AppText style={styles.pageTitle}>My Profile</AppText>
+              </View>
+            </AppBar>
+            <AppRow
+              justifyContent="space-around"
+              alignItems="center"
+              style={styles.card}
+            >
+              <AppAvatar
+                profileImage={currentUser.profileImage}
+                size={height * 0.14}
+              />
+              <View>
+                <AppText
+                  style={{
+                    fontFamily: "Poppins_600SemiBold",
+                    fontSize: 20 / PixelRatio.getFontScale(),
+                    width: width * 0.35,
+                  }}
+                  numberOfLines={1}
+                >
+                  {currentUser.name}
+                </AppText>
+                <AppText
+                  style={{
+                    color: colors.grey,
+                    fontSize: 14 / PixelRatio.getFontScale(),
                   }}
                 >
-                  <AppChip
-                    data={chip}
-                    style={
-                      chip.selected ? { backgroundColor: colors.secondary } : {}
-                    }
-                  />
-                </Pressable>
-              );
-            })}
-          </AppRow>
-        </View>
+                  {currentUser.place ? currentUser.place : "Set Place"}
+                </AppText>
+              </View>
+              <AppIcon
+                iconType="Feather"
+                style={{ paddingRight: width * 0.01 }}
+                name="edit"
+                size={30 / PixelRatio.getFontScale()}
+                color="black"
+                onPress={() => {
+                  navigation.navigate("EditProfilePage");
+                }}
+              />
+            </AppRow>
+            <View style={styles.menu}>
+              <AppText style={styles.menuTitle}>My Status</AppText>
+              <AppRow>
+                {statusChips.map((chip, index) => {
+                  return (
+                    <Pressable
+                      key={index}
+                      onPress={() => {
+                        setStatusChips(
+                          statusChips.filter((c) => {
+                            if (chip.id === c.id) c.selected = true;
+                            else c.selected = false;
 
-        <View style={styles.menu}>
-          <AppText style={styles.menuTitle}>Settings</AppText>
-          <View>
-            <MenuRow
-              width={width}
-              iconName="calendar-star"
-              iconType="MaterialCommunityIcons"
-              iconBackgroundColor={colors.primary}
-              iconSize={60 / PixelRatio.getFontScale()}
-              menuRowTitle="Achievements"
-            />
-            <MenuRow
-              width={width}
-              iconName="settings"
-              iconType="MaterialIcons"
-              iconBackgroundColor={colors.primary}
-              iconSize={60 / PixelRatio.getFontScale()}
-              menuRowTitle="Settings"
-            />
+                            return c;
+                          })
+                        );
+                      }}
+                    >
+                      <AppChip
+                        data={chip}
+                        style={
+                          chip.selected
+                            ? { backgroundColor: colors.secondary }
+                            : {}
+                        }
+                      />
+                    </Pressable>
+                  );
+                })}
+              </AppRow>
+            </View>
+
+            <View style={styles.menu}>
+              <AppText style={styles.menuTitle}>Settings</AppText>
+              <View>
+                <MenuRow
+                  width={width}
+                  iconName="calendar-star"
+                  iconType="MaterialCommunityIcons"
+                  iconBackgroundColor={colors.primary}
+                  iconSize={60 / PixelRatio.getFontScale()}
+                  menuRowTitle="Achievements"
+                />
+                <MenuRow
+                  width={width}
+                  iconName="settings"
+                  iconType="MaterialIcons"
+                  iconBackgroundColor={colors.primary}
+                  iconSize={60 / PixelRatio.getFontScale()}
+                  menuRowTitle="Settings"
+                />
+              </View>
+            </View>
+            <View style={styles.menu}>
+              <AppText style={styles.menuTitle}>My Account</AppText>
+              <View>
+                <AppText
+                  onPress={() => setChangeAccModelVisible(true)}
+                  style={styles.switchAcc}
+                >
+                  Switch to Other Account
+                </AppText>
+                <AppText
+                  style={styles.logOut}
+                  onPress={() => {
+                    Alert.alert("Are you sure...", "Do you want to Log out?", [
+                      {
+                        onPress: () => {},
+                        text: "No",
+                      },
+                      {
+                        onPress: () => {
+                          navigation.popToTop();
+                        },
+                        text: "Yes",
+                      },
+                    ]);
+                  }}
+                >
+                  Log Out
+                </AppText>
+              </View>
+            </View>
           </View>
-        </View>
-        <View style={styles.menu}>
-          <AppText style={styles.menuTitle}>My Account</AppText>
-          <View>
-            <AppText style={styles.switchAcc}>Switch to Other Account</AppText>
-            <AppText
-              style={styles.logOut}
-              onPress={() => {
-                Alert.alert("Are you sure...", "Do you want to Log out?", [
-                  {
-                    onPress: () => {},
-                    text: "No",
-                  },
-                  {
-                    onPress: () => {
-                      navigation.popToTop();
-                    },
-                    text: "Yes",
-                  },
-                ]);
-              }}
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={changeAccModelVisible}
+            onRequestClose={() => setChangeAccModelVisible(false)}
+          >
+            <View
+              style={[
+                styles.centeredView,
+                {
+                  justifyContent: "flex-start",
+                  alignItems: "flex-end",
+                  marginVertical: width * 0.35,
+                },
+              ]}
             >
-              Log Out
-            </AppText>
-          </View>
-        </View>
-      </View>
-    </ScrollView>
-  );
+              <View
+                style={[
+                  styles.modalView,
+                  {
+                    width: width * 0.9,
+                    height: height * 0.7,
+                    alignSelf: "center",
+                    overflow: "hidden",
+                  },
+                ]}
+              >
+                <View>
+                  <AppRow alignItems="center">
+                    <AppIcon
+                      iconType="FontAwesome"
+                      onPress={() => setChangeAccModelVisible(false)}
+                      name="close"
+                      size={25}
+                      color={colors.black}
+                      style={{ marginRight: 15 }}
+                    />
+                    <AppText
+                      style={{
+                        fontFamily: "Poppins_700Bold",
+                        fontSize: 20,
+                        marginTop: 5,
+                      }}
+                    >
+                      Accounts
+                    </AppText>
+                  </AppRow>
+
+                  <ScrollView style={{ marginBottom: 20 }}>
+                    <View
+                      style={{
+                        width: "100%",
+                        height: 50,
+                        marginVertical: 10,
+                      }}
+                    >
+                      <AppRow alignItems="center">
+                        <AppAvatar
+                          size={48}
+                          profileImage={currentUser.profileImage}
+                        />
+                        <View style={{ marginHorizontal: 15 }}>
+                          <AppText style={{ fontFamily: "Poppins_500Medium" }}>
+                            {currentUser.name}
+                          </AppText>
+                          <AppText style={{ color: colors.grey }}>
+                            {currentUser.email}
+                          </AppText>
+                        </View>
+                      </AppRow>
+                    </View>
+                    <AppLine color="black" marginVertical={5} />
+                    {Object.keys(users).map((key, index) => {
+                      if (users[key].userId !== currentUser.userId)
+                        return (
+                          <TouchableOpacity
+                            key={users[key].userId * index}
+                            onPress={() => {
+                              dispatcher(resetTodoState());
+                              dispatcher(resetCategoriesState());
+                              dispatcher(setCurrentUser({ user: users[key] }));
+
+                              navigation.goBack();
+                            }}
+                          >
+                            <View
+                              style={{
+                                width: "100%",
+                                height: 50,
+                                marginVertical: 10,
+                              }}
+                            >
+                              <AppRow alignItems="center">
+                                <AppAvatar
+                                  size={48}
+                                  profileImage={users[key].profileImage}
+                                />
+                                <View style={{ marginHorizontal: 15 }}>
+                                  <AppText
+                                    style={{ fontFamily: "Poppins_500Medium" }}
+                                  >
+                                    {users[key].name}
+                                  </AppText>
+                                  <AppText style={{ color: colors.grey }}>
+                                    {users[key].email}
+                                  </AppText>
+                                </View>
+                              </AppRow>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                    })}
+                  </ScrollView>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        </ScrollView>
+      </GestureHandlerRootView>
+    );
+  }
 }
 
 //Helpers
@@ -203,9 +346,6 @@ function MenuRow({
 }
 
 const styles = StyleSheet.create({
-  circleAvatar: {
-    backgroundColor: colors.lightGray,
-  },
   card: {
     marginTop: 20,
     backgroundColor: "white",
@@ -213,6 +353,11 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     borderRadius: 10,
     elevation: 4,
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   container: {
     backgroundColor: "#fff",
@@ -253,6 +398,24 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     fontFamily: "Poppins_600SemiBold",
     fontSize: 15 / PixelRatio.getFontScale(),
+  },
+  modalText: {
+    fontSize: 18,
+    marginBottom: 20,
+    fontFamily: "Poppins_700Bold",
+  },
+  modalView: {
+    backgroundColor: colors.white,
+    borderRadius: 10,
+    padding: 20,
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   topBar: {
     alignItems: "center",

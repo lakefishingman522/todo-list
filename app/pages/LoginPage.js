@@ -16,7 +16,7 @@ import AppTextField from "../components/AppTextField";
 import AppButton from "../components/AppButton";
 import AppText from "../components/AppText";
 import colors from "../config/colors";
-import { addUser, setCurrentUser, setUser } from "../features/actions";
+import { addUser, fetchUser, setCurrentUser } from "../features/actions";
 
 export default function LoginPage({ navigation }) {
   //Dispatcher
@@ -24,6 +24,7 @@ export default function LoginPage({ navigation }) {
 
   //Selectors
   const selectUsers = useSelector((state) => state.user.users);
+  const fetchedUsers = useSelector((state) => state.user.isFetched);
 
   //Form States
   const [loginEmail, setLoginEmail] = useState("");
@@ -46,30 +47,7 @@ export default function LoginPage({ navigation }) {
 
   //Get Users
   useEffect(() => {
-    async function getUsers() {
-      let tries = 3,
-        gotUsers = false;
-
-      while (!gotUsers && tries--) {
-        await AsyncStorage.getItem("@Users_Array", (err, result) => {
-          if (err) return;
-          else {
-            if (result !== null) {
-              dispatch(setUser({ users: JSON.parse(result).Users }));
-              gotUsers = true;
-            }
-          }
-        });
-      }
-
-      if (!gotUsers) {
-        ToastAndroid.show(
-          "Somethong went wrong, Try Again Sometimes later",
-          ToastAndroid.SHORT
-        );
-      }
-    }
-    getUsers();
+    if (!fetchedUsers) dispatch(fetchUser());
   }, []);
 
   //Handlers
@@ -114,8 +92,6 @@ export default function LoginPage({ navigation }) {
         ourUser = selectUsers[key];
     });
 
-    // console.log(ourUser);
-
     if (ourUser.name === "")
       ToastAndroid.show("Invalid Credenials", ToastAndroid.SHORT);
     else {
@@ -123,15 +99,8 @@ export default function LoginPage({ navigation }) {
       setLoginPassword("");
       setShowPasswordLogin(0);
       dispatch(setCurrentUser({ user: ourUser }));
-      navigation.navigate("HomePage", ourUser);
+      navigation.navigate("HomePage");
     }
-
-    // await AsyncStorage.setItem(
-    //   `@todosCategories_0.18565659353231381679620611913`,
-    //   JSON.stringify(cat)
-    // ).then((v) => {
-    //   console.log("Done");
-    // });
   };
 
   const handleRegister = async () => {
@@ -162,7 +131,7 @@ export default function LoginPage({ navigation }) {
 
     let userName = signUpEmail.substring(0, signUpEmail.indexOf("@"));
 
-    let newId = Math.random() * Math.random() + "" + Date.now();
+    let newId = Math.random() * Math.random() + "-" + Date.now();
     let newUser = {
       name: userName[0].toUpperCase() + userName.substring(1),
       email: signUpEmail.toLowerCase(),
@@ -173,7 +142,8 @@ export default function LoginPage({ navigation }) {
     let dataUsers = {};
     dataUsers[newId] = newUser;
     const jsonValue = JSON.stringify({
-      Users: { ...selectUsers, ...dataUsers },
+      ...selectUsers,
+      ...dataUsers,
     });
 
     dispatch(
@@ -261,7 +231,10 @@ export default function LoginPage({ navigation }) {
                 style={styles.loginButton}
                 title="Login"
                 onPress={handleLogin}
-              ></AppButton>
+                // onPress={async () => {
+                //   await AsyncStorage.clear().then((v) => console.log("Done"));
+                // }}
+              />
             </View>
           ) : (
             <View style={styles.loginContainer}>

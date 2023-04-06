@@ -6,6 +6,7 @@ export function search(todos, sear) {
     if (todos[key].title.toLowerCase().match(pattern) != null)
       newTodos[key] = todos[key];
   });
+  x;
 
   return newTodos;
 }
