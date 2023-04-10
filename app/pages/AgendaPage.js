@@ -7,16 +7,13 @@ import colors from "../config/colors";
 import { getDates } from "../config/utilities";
 
 const AgendaPage = ({ navigation, route }) => {
+  //Utils
   const { width, height } = useWindowDimensions();
-
   const [items, setItems] = useState({});
   let now = new Date();
-
   now.setFullYear(now.getFullYear(), now.getMonth(), 1);
-
   let from = new Date(new Date(now).setMonth(now.getMonth() - 1));
   let to = new Date(new Date(now).setMonth(now.getMonth() + 2));
-
   from.setFullYear(from.getFullYear(), from.getMonth(), 1);
   to.setFullYear(to.getFullYear(), to.getMonth(), 1);
 

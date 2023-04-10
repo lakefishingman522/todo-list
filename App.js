@@ -1,7 +1,7 @@
 // Default or Third Party Library Imports
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Provider, useDispatch } from "react-redux";
+import { Provider } from "react-redux";
 
 // Custom Imports
 import LoginPage from "./app/pages/LoginPage";
@@ -10,27 +10,31 @@ import AgendaPage from "./app/pages/AgendaPage";
 import ProfilePage from "./app/pages/ProfilePage";
 import EditProfilePage from "./app/pages/EditProfilePage";
 import store from "./app/features/store";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
+import { RESET, persister } from "./app/features/actions";
+import { initialStateTodo } from "./app/features/reducers/todos";
+import { initialStateCategory } from "./app/features/reducers/todoscategories";
 
 //Creating Navigation Stack
 const { Navigator, Screen } = createNativeStackNavigator();
 
+//Utils
+let isLoginPage = true;
+
 export default function NavigatorPage() {
+  //Appstate reference
   const appState = useRef(AppState.currentState);
 
+  //Listener for App Activeness
   useEffect(() => {
     const subscribe = AppState.addEventListener("change", (nextAppState) => {
-      if (
-        appState.current.match(/inactive|background/) &&
-        nextAppState === "active"
-      ) {
-        console.log("App has come to the foreground!");
-      }
-
       appState.current = nextAppState;
-      setAppStateVisible(appState.current);
-      console.log("AppState", appState.current);
+
+      if (!isLoginPage && appState.current === "background") {
+        console.log("AppState", appState.current);
+        store.dispatch(persister(store.getState()));
+      }
     });
 
     return () => {
@@ -48,6 +52,15 @@ export default function NavigatorPage() {
             options={{
               headerShown: false,
             }}
+            listeners={({}) => ({
+              blur: () => {
+                isLoginPage = false;
+              },
+              focus: () => {
+                isLoginPage = true;
+                store.dispatch({ type: RESET, payload: store.getState() });
+              },
+            })}
           />
           <Screen
             name="HomePage"

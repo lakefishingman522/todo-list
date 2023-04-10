@@ -4,7 +4,9 @@ export const MARK_TODO = "MARK_TODO";
 export const DELETE_TODO = "DELETE_TODO";
 export const ADD_TODO = "ADD_TODO";
 export const SET_TODO = "SET_TODO";
+export const SET_TODO_WHILE_SEARCH = "SET_TODO_WHILE_SEARCH";
 export const RESET_TODO = "RESET_TODO";
+export const FETCH_TODO = "FETCH_TODO";
 
 //users
 export const ADD_USER = "ADD_USER";
@@ -12,6 +14,7 @@ export const EDIT_USER = "EDIT_USER";
 export const SET_USER = "SET_USER";
 export const SET_CURRENT_USER = "SET_CURRENT_USER";
 export const FETCH_USER = "FETCH_USER";
+export const CHANGE_ACCOUNT = "CHANGE_ACCOUNT";
 
 //categories
 export const ADD_TODO_CAT = "ADD_TODO_CAT";
@@ -20,6 +23,11 @@ export const DELETE_TODO_CAT = "DELETE_TODO_CAT";
 export const SET_TODO_CAT = "SET_TODO_CAT";
 export const SELECT_TODO_CAT = "SELECT_TODO_CAT";
 export const RESET_CATEGORY = "RESET_CATEGORY";
+export const FETCH_TODO_CAT = "FETCH_TODO_CAT";
+
+//State
+export const PERSIST = "PERSIST_STATE";
+export const RESET = "RESET";
 
 //Action Creater
 //todos
@@ -35,6 +43,11 @@ export const markTodo = (item) => ({
 
 export const setTodo = (content) => ({
   type: SET_TODO,
+  payload: content,
+});
+
+export const setTodoWhileSearch = (content) => ({
+  type: SET_TODO_WHILE_SEARCH,
   payload: content,
 });
 
@@ -103,4 +116,10 @@ export const selectTodoCat = (id) => ({
 
 export const resetCategoriesState = () => ({
   type: RESET_CATEGORY,
+});
+
+//state
+export const persister = (store) => ({
+  type: PERSIST,
+  payload: store,
 });

@@ -9,7 +9,7 @@ import {
   Pressable,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useDispatch, useSelector, useStore } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 // Custom Imports
 import AppTextField from "../components/AppTextField";
@@ -38,12 +38,11 @@ export default function LoginPage({ navigation }) {
   //Util States
   const [currentTab, setCurrentTab] = useState(0);
   const { height, width } = useWindowDimensions();
+  let tabMul = currentTab ? 0.282 : 0.3;
 
   //Refs
   const refLoginInput = useRef(null);
   const refSignUpInput = useRef(null);
-
-  let tabMul = currentTab ? 0.282 : 0.3;
 
   //Get Users
   useEffect(() => {
@@ -61,7 +60,7 @@ export default function LoginPage({ navigation }) {
         if (signUpEmail) setSignUpEmail("");
         if (signUpPassword) setSignUpPassword("");
         if (signUpOTP) setSignUpOTP("");
-        if (showPasswordCall) setShowPasswordSignUp(0);
+        if (showPasswordSignUp) setShowPasswordSignUp(0);
       }
       setCurrentTab(tab);
     }
@@ -172,7 +171,7 @@ export default function LoginPage({ navigation }) {
 
   return (
     <ScrollView style={styles.scrollView}>
-      <View style={[styles.container, { height: height * 1.05 }]}>
+      <View style={[styles.container, { height: height * 1.1 }]}>
         <View style={styles.upperSphere} />
         <View style={styles.lowerSphere} />
         <View

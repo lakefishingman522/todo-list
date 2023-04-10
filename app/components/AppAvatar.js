@@ -1,35 +1,48 @@
-import { Image, View } from "react-native";
+import { Image, Pressable, View } from "react-native";
 import AppIcon from "./AppIcon";
 import React from "react";
 import colors from "../config/colors";
 
-function AppAvatar({ profileImage, size }) {
+function AppAvatar({
+  profileImage,
+  size,
+  onPress,
+  iconColor,
+  backgroundColor = colors.lightGray,
+}) {
   return (
-    <View
-      style={[
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: colors.lightGray,
-          justifyContent: "center",
-          alignItems: "center",
-        },
-      ]}
-    >
-      {!profileImage ? (
-        <AppIcon iconType="AntDesign" name="user" size={size / 2} />
-      ) : (
-        <Image
-          source={{ uri: profileImage }}
-          style={{
+    <Pressable onPress={onPress}>
+      <View
+        style={[
+          {
             width: size,
             height: size,
             borderRadius: size / 2,
-          }}
-        />
-      )}
-    </View>
+            backgroundColor: backgroundColor,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
+        {!profileImage ? (
+          <AppIcon
+            iconType="AntDesign"
+            name="user"
+            size={size / 2}
+            color={iconColor}
+          />
+        ) : (
+          <Image
+            source={{ uri: profileImage }}
+            style={{
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+            }}
+          />
+        )}
+      </View>
+    </Pressable>
   );
 }
 

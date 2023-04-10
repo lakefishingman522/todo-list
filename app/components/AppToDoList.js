@@ -40,7 +40,6 @@ export default function AppToDoList({
   let dueTimeString = dueDate.toString().slice(16, 21);
   let emote = "📝";
 
-  // console.log(data);
   const withEmojis = /\p{Extended_Pictographic}/u;
 
   if (withEmojis.test(data.categories[0].slice(0, 2)))

@@ -12,7 +12,6 @@ import {
   useWindowDimensions,
   Pressable,
   ToastAndroid,
-  Image,
 } from "react-native";
 import {
   GestureHandlerRootView,
@@ -30,14 +29,15 @@ import {
 import "react-native-reanimated";
 import { useFonts, Poppins_400Regular } from "@expo-google-fonts/poppins";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { useDispatch, useSelector } from "react-redux";
 import { Calendar } from "react-native-calendars";
+import { useIsFocused } from "@react-navigation/native";
+import { ActivityIndicator } from "react-native-paper";
 
 // Custom Imports
 import colors from "../config/colors";
-import { search, deleteItem } from "../config/utilities";
+import { search } from "../config/utilities";
 import AppToDoList from "../components/AppToDoList";
 import AppBar from "../components/AppBar";
 import AppRoundedIcon from "../components/AppRoundedIcon";
@@ -51,23 +51,20 @@ import AppLine from "../components/AppLine";
 import AppAnalogClock from "../components/AppAnalogClock";
 import AppIcon from "../components/AppIcon";
 import {
+  FETCH_TODO,
+  FETCH_TODO_CAT,
   addTodoCat,
-  resetTodoState,
   createTodo,
   deleteTodo,
   deleteTodoCat,
   editTodoCat,
   markTodo,
   selectTodoCat,
-  setTodo,
-  setTodoCat,
-  resetCategoriesState,
+  setTodoWhileSearch,
 } from "../features/actions";
-import { useIsFocused } from "@react-navigation/native";
-import { ActivityIndicator } from "react-native-paper";
+import AppAvatar from "../components/AppAvatar";
 
 //Util for Search
-let todosForSearch = {};
 let tab = 0;
 
 //Tab Navigator
@@ -81,6 +78,7 @@ export default function HomePage({ route, navigation }) {
   const selectTodos = useSelector((state) => state.todo);
   const selectCategories = useSelector((state) => state.categories);
   const currentUser = useSelector((state) => state.user.currentUser);
+  const todosForSearch = useSelector((state) => state.todo.todosForSearch);
 
   //States
   //Text Controller States
@@ -90,7 +88,6 @@ export default function HomePage({ route, navigation }) {
   });
   const [taskSearch, settaskSearch] = useState("");
   const [chipTextController, setChipTextController] = useState("");
-  const [fetching, setFetching] = useState();
 
   //Listener States
   const [keyboardStatus, setKeyboardStatus] = useState(0);
@@ -155,103 +152,13 @@ export default function HomePage({ route, navigation }) {
 
   //Get Todos and Categories
   useEffect(() => {
-    async function getTodos() {
-      console.log("Get Data Called");
-      const jsonValue = await AsyncStorage.getItem(
-        `@todos_${currentUser.userId}`
-      );
-      const parsedData = JSON.parse(jsonValue);
-
-      if (parsedData) dispatcher(setTodo(parsedData));
-      else dispatcher(setTodo({ completed: {}, pending: {} }));
-
-      todosForSearch = parsedData;
-    }
-
-    async function getCategories() {
-      const jsonValue = await AsyncStorage.getItem(
-        `@todosCategories_${currentUser.userId}`
-      );
-      const parsedData = JSON.parse(jsonValue);
-      if (parsedData) {
-        dispatcher(
-          setTodoCat({
-            objects: parsedData,
-            length: Object.keys(parsedData).length,
-          })
-        );
-      } else {
-        dispatcher(
-          setTodoCat({
-            objects: {},
-            length: 0,
-          })
-        );
-      }
-    }
-
     if (!selectTodos.isFetched) {
-      getTodos();
+      dispatcher({ type: FETCH_TODO, payload: currentUser.userId });
     }
     if (!selectCategories.isFetched) {
-      getCategories();
+      dispatcher({ type: FETCH_TODO_CAT, payload: currentUser.userId });
     }
-  }, [isFocused]);
-
-  //DB Setters
-
-  //Todos
-  useEffect(() => {
-    if (!fetching && taskSearch === "") {
-      async function setDB() {
-        const jsonValue = JSON.stringify({
-          ...selectTodos,
-        });
-        await AsyncStorage.setItem(`@todos_${currentUser.userId}`, jsonValue)
-          .then((value) => {
-            console.log("DB Setted");
-            return 200;
-          })
-          .catch((err) => {
-            ToastAndroid.show(
-              "Unable to Connect... Try Again",
-              ToastAndroid.SHORT
-            );
-            console.log("Error");
-            return 400;
-          });
-      }
-      if (selectTodos.isFetched) setDB();
-    }
-  }, [selectTodos]);
-
-  //Categories
-  useEffect(() => {
-    if (!fetching && taskSearch === "") {
-      async function setDB() {
-        const jsonValue = JSON.stringify({
-          ...selectCategories.objects,
-        });
-        await AsyncStorage.setItem(
-          `@todosCategories_${currentUser.userId}`,
-          jsonValue
-        )
-          .then((value) => {
-            return 200;
-          })
-          .catch((err) => {
-            ToastAndroid.show(
-              "Unable to Connect... Try Again",
-              ToastAndroid.SHORT
-            );
-            console.log("Error");
-            return 400;
-          });
-      }
-
-      if (selectTodos.isFetched) setDB();
-    }
-  }, [selectCategories]);
+  }, [currentUser]);
 
   //Event Listener for KeyBoard
   useEffect(() => {
@@ -300,9 +207,6 @@ export default function HomePage({ route, navigation }) {
           easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
         setBottomNavVisible(false);
-      } else {
-        dispatcher(resetTodoState());
-        dispatcher(resetCategoriesState());
       }
     });
 
@@ -316,14 +220,14 @@ export default function HomePage({ route, navigation }) {
     settaskSearch(newText);
     if (tab)
       dispatcher(
-        setTodo({
+        setTodoWhileSearch({
           completed: search(todosForSearch.completed, newText),
           pending: selectTodos.pending,
         })
       );
     else
       dispatcher(
-        setTodo({
+        setTodoWhileSearch({
           completed: selectTodos.completed,
           pending: search(todosForSearch.pending, newText),
         })
@@ -354,7 +258,6 @@ export default function HomePage({ route, navigation }) {
 
     let categories = [];
     Object.keys(selectCategories.objects).filter((key) => {
-      // console.log(selectCategories.objects[key].selected);
       if (selectCategories.objects[key].selected) {
         categories.push(selectCategories.objects[key].title);
       }
@@ -443,7 +346,7 @@ export default function HomePage({ route, navigation }) {
     onEnd: () => {
       let h = (height * 0.8) / 2;
       if (h <= translateY.value * -1) {
-        translateY.value = withSpring(height * -0.675);
+        translateY.value = withSpring(height * -0.7);
         runOnJS(setBottomNavVisible)(true);
       } else {
         translateY.value = withSpring(0);
@@ -452,7 +355,7 @@ export default function HomePage({ route, navigation }) {
     },
   });
 
-  if (fontsLoaded && isFocused)
+  if (fontsLoaded)
     return (
       <GestureHandlerRootView style={styles.container}>
         <TapGestureHandler
@@ -527,28 +430,15 @@ export default function HomePage({ route, navigation }) {
                 ) : (
                   <AppSizedBox width={20} height={20} />
                 )}
-
-                {!currentUser.profileImage && isFocused ? (
-                  <AppRoundedIcon
-                    name="user"
-                    size={50}
+                {isFocused ? (
+                  <AppAvatar
+                    profileImage={currentUser.profileImage}
+                    size={height * 0.07}
+                    onPress={() => navigation.navigate("ProfilePage")}
                     iconColor={colors.primary}
                     backgroundColor={colors.white}
-                    onPress={() => navigation.navigate("ProfilePage")}
-                    style={{ marginLeft: 10, overflow: "hidden" }}
                   />
-                ) : (
-                  <Pressable onPress={() => navigation.navigate("ProfilePage")}>
-                    <Image
-                      source={{ uri: currentUser.profileImage }}
-                      style={{
-                        width: height * 0.07,
-                        height: height * 0.07,
-                        borderRadius: height * 0.035,
-                      }}
-                    />
-                  </Pressable>
-                )}
+                ) : null}
               </View>
             </AppBar>
             <View
@@ -586,7 +476,6 @@ export default function HomePage({ route, navigation }) {
                         fetching={
                           selectTodos.isFetched && selectCategories.isFetched
                         }
-                        setFetching={(newValue) => setFetching(newValue)}
                         deletetodo={(item) => {
                           dispatcher(deleteTodo(item));
                         }}
@@ -621,7 +510,6 @@ export default function HomePage({ route, navigation }) {
                         fetching={
                           selectTodos.isFetched && selectCategories.isFetched
                         }
-                        setFetching={(newValue) => setFetching(newValue)}
                         deletetodo={(item) => {
                           dispatcher(deleteTodo(item));
                         }}
@@ -669,7 +557,7 @@ export default function HomePage({ route, navigation }) {
                     style={styles.addPressable}
                     onPress={() => {
                       // tempHandler();
-                      translateY.value = withTiming(height * -0.675, {
+                      translateY.value = withTiming(height * -0.7, {
                         duration: 500,
                         easing: Easing.bezier(0.25, 0.1, 0.25, 1),
                       });
@@ -824,7 +712,6 @@ export default function HomePage({ route, navigation }) {
                           DateTimePickerAndroid.open({
                             mode: "time",
                             onChange: (time) => {
-                              // console.log("Changed");
                               let newTime = new Date(
                                 time.nativeEvent.timestamp
                               );
@@ -957,7 +844,6 @@ export default function HomePage({ route, navigation }) {
 function PopulateTodos({
   todos = [],
   fetching,
-  setFetching,
   markCompletedOnToDo,
   deletetodo,
   noTodoMessage,

@@ -1,10 +1,4 @@
-import {
-  ADD_USER,
-  EDIT_USER,
-  FETCH_REQ_FAILED,
-  SET_CURRENT_USER,
-  SET_USER,
-} from "../actions";
+import { ADD_USER, EDIT_USER, SET_CURRENT_USER, SET_USER } from "../actions";
 
 //Initial State
 const initialState = {
@@ -38,11 +32,6 @@ export default function (state = initialState, action) {
         currentUser: action.payload.user,
       };
     }
-    // case FETCH_REQ_FAILED:
-    //   return {
-    //     ...state,
-    //     isFetched: false,
-    //   };
     default:
       return state;
   }

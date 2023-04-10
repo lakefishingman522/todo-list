@@ -9,12 +9,12 @@ import {
   Pressable,
   ScrollView,
   Alert,
-  Image,
   Modal,
   TouchableOpacity,
 } from "react-native";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch, useSelector, useStore } from "react-redux";
 import { useIsFocused } from "@react-navigation/native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Custom Imports
 import colors from "../config/colors";
@@ -26,32 +26,33 @@ import AppChip from "../components/AppChip";
 import AppRoundedIcon from "../components/AppRoundedIcon";
 import AppAvatar from "../components/AppAvatar";
 import AppLine from "../components/AppLine";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import {
-  resetCategoriesState,
-  resetTodoState,
-  setCurrentUser,
-} from "../features/actions";
 
 function ProfilePage({ navigation, route }) {
-  const { width, height } = useWindowDimensions();
-  const currentUser = useSelector((state) => state.user.currentUser);
-  const users = useSelector((state) => state.user.users);
+  //Store
+  const store = useStore();
+
+  //Selectors
+  const { users, currentUser } = useSelector((state) => state.user);
+
+  //Dispatch
   const dispatcher = useDispatch();
 
+  //Utils
+  const { width, height } = useWindowDimensions();
   const [statusChips, setStatusChips] = useState([
     { id: 1, title: "🎯 Active", selected: true },
     { id: 2, title: "😴 Away", selected: false },
   ]);
   const [changeAccModelVisible, setChangeAccModelVisible] = useState(false);
 
+  //Listener For Page Focusing
   const isFocused = useIsFocused();
 
   if (isFocused) {
     return (
       <GestureHandlerRootView>
         <ScrollView
-          style={[styles.container, { width: width, height: height }]}
+          style={[styles.container, { width: width, height: height * 1.1 }]}
         >
           <View>
             <AppBar
@@ -274,9 +275,13 @@ function ProfilePage({ navigation, route }) {
                           <TouchableOpacity
                             key={users[key].userId * index}
                             onPress={() => {
-                              dispatcher(resetTodoState());
-                              dispatcher(resetCategoriesState());
-                              dispatcher(setCurrentUser({ user: users[key] }));
+                              dispatcher({
+                                type: "CHANGE_ACCOUNT",
+                                payload: {
+                                  store: store.getState(),
+                                  user: users[key],
+                                },
+                              });
 
                               navigation.goBack();
                             }}

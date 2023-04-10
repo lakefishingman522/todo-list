@@ -8,7 +8,7 @@ import {
 } from "../actions";
 
 //Initial State
-const initialState = {
+export const initialState = {
   objects: {
     1: { id: 1, selected: false, title: "🤝 Meeting" },
     2: { id: 2, selected: false, title: "📈 Review" },
@@ -43,7 +43,7 @@ export default function (state = initialState, action) {
     case SET_TODO_CAT: {
       return {
         ...state,
-        objects: { ...state.objects, ...action.payload.objects },
+        objects: { ...initialState.objects, ...action.payload.objects },
         noOfCategories: action.payload.length + state.noOfCategories,
         isFetched: true,
       };
