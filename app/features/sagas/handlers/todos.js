@@ -36,8 +36,11 @@ export function* handleFetchTodo(action) {
   try {
     let dataTodos = yield call(getTodos, action.payload);
 
-    if (dataTodos) yield put(setTodo(dataTodos));
-    else yield put(setTodo({ completed: {}, pending: {} }));
+    if (dataTodos && dataTodos.completed && dataTodos.pending)
+      yield put(setTodo(dataTodos));
+    else {
+      yield put(setTodo({ completed: {}, pending: {} }));
+    }
   } catch (error) {
     console.log(error);
   }

@@ -33,7 +33,7 @@ function ProfilePage({ navigation, route }) {
 
   //Selectors
   const { users, currentUser } = useSelector((state) => state.user);
-
+  console.log(users);
   //Dispatch
   const dispatcher = useDispatch();
 
@@ -273,7 +273,7 @@ function ProfilePage({ navigation, route }) {
                       if (users[key].userId !== currentUser.userId)
                         return (
                           <TouchableOpacity
-                            key={users[key].userId * index}
+                            key={users[key].userId}
                             onPress={() => {
                               dispatcher({
                                 type: "CHANGE_ACCOUNT",
