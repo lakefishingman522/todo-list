@@ -4,7 +4,7 @@
 
 * Be Prepared is a task project that I was given in the time of my internship @Rently
 * This is a normal todo app with all CRUD functionalities with my own cool features gives a smooth UI/UX(I hope so...😁)
-* This was my project during the training in react native after Understand Flex, so the code is improvisied with every commit as I learned new concepts
+* This was my project during the training in react native after - [Understand Flex](https://github.com/Balasuriya29/understand-flex), so the code is improvisied with every commit as I learned new concepts
 * I have used both class and functional components with redux implemented in both to understand it along with sagas
 * The Files Structure and code readability - at most Developer Standards
 * Working on One Last Feature will Update Soon...🚀
