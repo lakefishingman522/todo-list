@@ -10,6 +10,7 @@ function AppAnalog({
   showSeconds,
   style,
   onPress,
+  colors,
 }) {
   let text = "AM";
   if (hour > 12) text = "PM";
@@ -24,13 +25,14 @@ function AppAnalog({
       <View
         style={[
           {
-            backgroundColor: "white",
+            backgroundColor: colors.background,
             borderRadius: size / 2,
             justifyContent: "center",
             alignItems: "center",
             height: size,
             width: size,
             elevation: 5,
+            shadowColor: colors.text,
           },
           style,
         ]}
@@ -77,7 +79,7 @@ function AppAnalog({
             width: 8,
             height: 8,
             borderRadius: 4,
-            backgroundColor: "black",
+            backgroundColor: colors.text,
           }}
         />
         <View
@@ -86,7 +88,7 @@ function AppAnalog({
             width: lanHour,
             height: 4,
             borderRadius: 4,
-            backgroundColor: "black",
+            backgroundColor: colors.text,
             transform: [
               { rotate: -90 + (hour + minutes / 12) * 30 + "deg" },
               { translateX: lanHour / 2 },
@@ -99,7 +101,7 @@ function AppAnalog({
             width: lanMinutes,
             height: 4,
             borderRadius: 4,
-            backgroundColor: "black",
+            backgroundColor: colors.text,
             transform: [
               { rotate: -90 + minutes * 30 + "deg" },
               { translateX: lanMinutes / 2 },
@@ -113,7 +115,7 @@ function AppAnalog({
               width: lanSeconds,
               height: 2,
               borderRadius: 4,
-              backgroundColor: "black",
+              backgroundColor: colors.text,
               transform: [
                 { rotate: -90 + seconds * 6 + "deg" },
                 { translateX: lanSeconds / 2 },

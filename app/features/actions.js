@@ -4,7 +4,6 @@ export const MARK_TODO = "MARK_TODO";
 export const DELETE_TODO = "DELETE_TODO";
 export const ADD_TODO = "ADD_TODO";
 export const SET_TODO = "SET_TODO";
-export const SET_TODO_WHILE_SEARCH = "SET_TODO_WHILE_SEARCH";
 export const RESET_TODO = "RESET_TODO";
 export const FETCH_TODO = "FETCH_TODO";
 
@@ -15,6 +14,8 @@ export const SET_USER = "SET_USER";
 export const SET_CURRENT_USER = "SET_CURRENT_USER";
 export const FETCH_USER = "FETCH_USER";
 export const CHANGE_ACCOUNT = "CHANGE_ACCOUNT";
+export const TOGGLE_THEME = "TOGGLE_THEME";
+export const DELETE_USER = "DELETE_USER";
 
 //categories
 export const ADD_TODO_CAT = "ADD_TODO_CAT";

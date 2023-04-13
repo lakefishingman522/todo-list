@@ -12,11 +12,13 @@ import {
   setTodo,
   setTodoCat,
 } from "../../actions";
+import { setUsers } from "../requests/users";
 
 export function* handlePersist(action) {
   try {
     let data1 = yield call(persistTodo, action.payload);
     let data2 = yield call(persistTodoCategories, action.payload);
+    let result = yield call(setUsers, action.payload);
 
     if (data1 != 200) console.log("DB Todo Not Setted");
     else {
@@ -38,9 +40,7 @@ export function* handleFetchTodo(action) {
 
     if (dataTodos && dataTodos.completed && dataTodos.pending)
       yield put(setTodo(dataTodos));
-    else {
-      yield put(setTodo({ completed: {}, pending: {} }));
-    }
+    else yield put(setTodo({ completed: {}, pending: {} }));
   } catch (error) {
     console.log(error);
   }
@@ -59,9 +59,9 @@ export function* handleFetchTodoCategory(action) {
       );
     else
       yield put(
-        setTodo({
+        setTodoCat({
           objects: {},
-          length: 0,
+          length: 6,
         })
       );
   } catch (error) {

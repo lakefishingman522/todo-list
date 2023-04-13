@@ -1,10 +1,10 @@
 import React from "react";
 import { PixelRatio, useWindowDimensions } from "react-native";
 import { StyleSheet, View } from "react-native";
-import colors from "../config/colors";
+
 import AppText from "./AppText";
 
-export default function AppChip({ data, style }) {
+export default function AppChip({ data, style, colors }) {
   const { width, height } = useWindowDimensions();
 
   return (
@@ -15,10 +15,13 @@ export default function AppChip({ data, style }) {
           ? {
               elevation: 10,
               backgroundColor: "rgba(255,255,255,1)",
+              shadowColor: colors.grey,
             }
-          : {},
+          : {
+              backgroundColor: colors.nearWhite,
+            },
         {
-          width: width * 0.3,
+          width: width * 0.32,
           height: height * 0.06,
           borderRadius: height * 0.03,
         },
@@ -29,7 +32,7 @@ export default function AppChip({ data, style }) {
         numberOfLines={1}
         style={[
           styles.title,
-          { color: data.selected ? colors.black : colors.grey },
+          { color: !data.selected ? colors.grey : colors.black },
         ]}
       >
         {data.title}
@@ -40,7 +43,7 @@ export default function AppChip({ data, style }) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "rgba(255,255,255,0.8)",
+    // backgroundColor: "rgba(255,255,255,0.8)",
     paddingVertical: 13,
     paddingHorizontal: 5,
     marginVertical: 10,

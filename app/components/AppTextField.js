@@ -50,7 +50,7 @@ const AppTextField = forwardRef(
             placeholder={placeholder}
             placeholderTextColor={colors.grey}
             onFocus={() => {
-              setBG("#f0dddd");
+              setBG(colors.blurBlue);
             }}
             onEndEditing={() => {
               setBG(colors.lightGray);

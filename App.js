@@ -1,5 +1,9 @@
 // Default or Third Party Library Imports
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  DarkTheme,
+  DefaultTheme,
+  NavigationContainer,
+} from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Provider } from "react-redux";
 
@@ -13,8 +17,6 @@ import store from "./app/features/store";
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { RESET, persister } from "./app/features/actions";
-import { initialStateTodo } from "./app/features/reducers/todos";
-import { initialStateCategory } from "./app/features/reducers/todoscategories";
 
 //Creating Navigation Stack
 const { Navigator, Screen } = createNativeStackNavigator();

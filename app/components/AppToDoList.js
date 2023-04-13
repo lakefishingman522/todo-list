@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Pressable, useWindowDimensions } from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
-import colors from "../config/colors";
 import AppRow from "./AppRow";
 import Animated, {
   runOnJS,
@@ -20,6 +19,7 @@ export default function AppToDoList({
   data,
   onPressCheckBox,
   onPressCross,
+  colors,
   onPressContent,
 }) {
   const { width: vw, height: vh } = useWindowDimensions();
@@ -94,7 +94,15 @@ export default function AppToDoList({
         activateAfterLongPress={80}
       >
         <Animated.View
-          style={[styles.container, animatedStyle, animatedStyletoShowDetails]}
+          style={[
+            styles.container,
+            {
+              backgroundColor: colors.card,
+              shadowColor: colors.lightGray,
+            },
+            animatedStyle,
+            animatedStyletoShowDetails,
+          ]}
         >
           <View style={{ alignItems: "center" }}>
             <View style={[styles.indicator, indicator]} />
@@ -112,12 +120,20 @@ export default function AppToDoList({
               >
                 {data.title}
               </AppText>
-              <AppText style={styles.time}>{dueTimeString}</AppText>
+              <AppText style={[styles.time, { color: colors.grey }]}>
+                {dueTimeString}
+              </AppText>
             </AppRow>
             <AppRow justifyContent="space-between">
-              <AppText style={styles.date}>{createDateString}</AppText>
-              <AppText style={styles.date}>{"->"}</AppText>
-              <AppText style={styles.date}>{dueDateString}</AppText>
+              <AppText style={[styles.date, { color: colors.grey }]}>
+                {createDateString}
+              </AppText>
+              <AppText style={[styles.date, { color: colors.grey }]}>
+                {"->"}
+              </AppText>
+              <AppText style={[styles.date, { color: colors.grey }]}>
+                {dueDateString}
+              </AppText>
             </AppRow>
             {extraHeight < 0 ? (
               <AppRow style={styles.button} alignItems="center">
@@ -156,7 +172,7 @@ export default function AppToDoList({
                 extraHeight > 0 ? "keyboard-arrow-down" : "keyboard-arrow-up"
               }
               size={24}
-              color="black"
+              color={colors.text}
             />
           </Pressable>
         </Animated.View>
@@ -189,14 +205,11 @@ const styles = StyleSheet.create({
     marginVertical: 16,
     marginHorizontal: 30,
     borderRadius: 10,
-    backgroundColor: colors.white,
     elevation: 10,
-    shadowColor: colors.lightGray,
     flexDirection: "row",
   },
   date: {
     margin: 4,
-    color: colors.grey,
     paddingTop: 8,
   },
   icon: { position: "absolute", right: 40, top: "40%" },
@@ -209,7 +222,6 @@ const styles = StyleSheet.create({
   },
   time: {
     margin: 4,
-    color: colors.grey,
     fontSize: 12.5,
   },
   title: {

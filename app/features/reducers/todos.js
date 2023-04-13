@@ -4,7 +4,6 @@ import {
   DELETE_TODO,
   MARK_TODO,
   RESET_TODO,
-  SET_TODO_WHILE_SEARCH,
 } from "../actions";
 
 //Initial State
@@ -12,7 +11,6 @@ export const initialState = {
   completed: {},
   pending: {},
   isFetched: false,
-  todosForSearch: { completed: {}, pending: {} },
 };
 
 //todo Reducer
@@ -24,32 +22,23 @@ export default function (state = initialState, action) {
         completed: {},
         pending: {},
         isFetched: false,
-        todosForSearch: { completed: {}, pending: {} },
       };
     }
     case SET_TODO: {
       return {
         ...state,
-        completed: action.payload.completed,
-        pending: action.payload.pending,
+        completed: { ...action.payload.completed },
+        pending: { ...action.payload.pending },
         isFetched: true,
-        todosForSearch: {
-          completed: action.payload.completed,
-          pending: action.payload.pending,
-        },
-      };
-    }
-    case SET_TODO_WHILE_SEARCH: {
-      return {
-        ...state,
-        completed: action.payload.completed,
-        pending: action.payload.pending,
       };
     }
     case ADD_TODO: {
-      state.pending[action.payload.todo.id] = action.payload.todo;
       return {
         ...state,
+        pending: {
+          ...state.pending,
+          [action.payload.todo.id]: action.payload.todo,
+        },
       };
     }
     case DELETE_TODO: {

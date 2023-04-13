@@ -44,7 +44,8 @@ export default function (state = initialState, action) {
       return {
         ...state,
         objects: { ...initialState.objects, ...action.payload.objects },
-        noOfCategories: action.payload.length + state.noOfCategories,
+        noOfCategories: action.payload.length,
+
         isFetched: true,
       };
     }

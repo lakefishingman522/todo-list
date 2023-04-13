@@ -1,120 +1,191 @@
 // Default or Third Party Library Imports
-import React, { useEffect, useRef, useState } from "react";
+import React, { Component } from "react";
 import {
-  useWindowDimensions,
   View,
   StyleSheet,
   ToastAndroid,
   ScrollView,
   Pressable,
+  Dimensions,
 } from "react-native";
+import { connect } from "react-redux";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useDispatch, useSelector } from "react-redux";
 
 // Custom Imports
 import AppTextField from "../components/AppTextField";
 import AppButton from "../components/AppButton";
 import AppText from "../components/AppText";
+import { ADD_USER, FETCH_USER, SET_CURRENT_USER } from "../features/actions";
+import { StatusBar } from "react-native";
 import colors from "../config/colors";
-import { addUser, fetchUser, setCurrentUser } from "../features/actions";
 
-export default function LoginPage({ navigation }) {
-  //Dispatcher
-  const dispatch = useDispatch();
+// Dimensions
+const { height, width } = Dimensions.get("window");
 
-  //Selectors
-  const selectUsers = useSelector((state) => state.user.users);
-  const fetchedUsers = useSelector((state) => state.user.isFetched);
+class LoginPage extends Component {
+  //States
+  constructor(props) {
+    super(props);
+    this.state = {
+      loginEmail: "",
+      loginPassword: "",
+      signUpEmail: "",
+      signUpPassword: "",
+      signUpOTP: "",
+      users: props.selectUsers,
+      currentTab: 0,
+      showPasswordLogin: 0,
+      showPasswordSignUp: 0,
+    };
+  }
 
-  //Form States
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [signUpEmail, setSignUpEmail] = useState("");
-  const [signUpPassword, setSignUpPassword] = useState("");
-  const [signUpOTP, setSignUpOTP] = useState("");
-  const [showPasswordLogin, setShowPasswordLogin] = useState(0);
-  const [showPasswordSignUp, setShowPasswordSignUp] = useState(0);
+  //get Users
+  componentDidMount() {
+    if (!this.props.fetchedUsers) this.props.fetchUser();
+  }
 
-  //Util States
-  const [currentTab, setCurrentTab] = useState(0);
-  const { height, width } = useWindowDimensions();
-  let tabMul = currentTab ? 0.282 : 0.3;
+  componentDidUpdate(prevProps, prevState) {
+    if (
+      JSON.stringify(prevState.users) != JSON.stringify(this.props.selectUsers)
+    ) {
+      this.setUsers(this.props.selectUsers);
+    }
+  }
 
-  //Refs
-  const refLoginInput = useRef(null);
-  const refSignUpInput = useRef(null);
+  //State Setters
+  setLoginEmail = (newText) => {
+    this.setState({
+      ...this.state,
+      loginEmail: newText,
+    });
+  };
 
-  //Get Users
-  useEffect(() => {
-    if (!fetchedUsers) dispatch(fetchUser());
-  }, []);
+  setLoginPassword = (newText) => {
+    this.setState({
+      ...this.state,
+      loginPassword: newText,
+    });
+  };
+
+  setSignUpEmail = (newText) => {
+    this.setState({
+      ...this.state,
+      signUpEmail: newText,
+    });
+  };
+
+  setSignUpPassword = (newText) => {
+    this.setState({
+      ...this.state,
+      signUpPassword: newText,
+    });
+  };
+
+  setSignUpOTP = (newText) => {
+    this.setState({
+      ...this.state,
+      signUpOTP: newText,
+    });
+  };
+
+  setUsers = (newUsers) => {
+    this.setState({
+      ...this.state,
+      users: newUsers,
+    });
+  };
+
+  setShowPasswordLogin = (newFlag) => {
+    this.setState({
+      ...this.state,
+      showPasswordLogin: newFlag,
+    });
+  };
+
+  setShowPasswordSignUp = (newFlag) => {
+    this.setState({
+      ...this.state,
+      showPasswordSignUp: newFlag,
+    });
+  };
 
   //Handlers
-  const switchTab = (tab) => {
-    if (tab != currentTab) {
+  switchTab = (tab) => {
+    if (tab != this.state.currentTab) {
       if (tab) {
-        if (loginEmail) setLoginEmail("");
-        if (loginPassword) setLoginPassword("");
-        if (showPasswordLogin) setShowPasswordLogin(0);
+        this.setState({
+          ...this.state,
+          loginEmail: "",
+          loginPassword: "",
+          showPasswordLogin: 0,
+          currentTab: tab,
+        });
       } else {
-        if (signUpEmail) setSignUpEmail("");
-        if (signUpPassword) setSignUpPassword("");
-        if (signUpOTP) setSignUpOTP("");
-        if (showPasswordSignUp) setShowPasswordSignUp(0);
+        this.setState({
+          ...this.state,
+          signUpEmail: "",
+          signUpPassword: "",
+          signUpOTP: "",
+          showPasswordSignUp: 0,
+          currentTab: tab,
+        });
       }
-      setCurrentTab(tab);
     }
   };
 
-  const showPasswordCall = (which) => {
-    if (which === "Login") setShowPasswordLogin(showPasswordLogin ^ 1);
-    else setShowPasswordSignUp(showPasswordSignUp ^ 1);
+  showPasswordCall = (which) => {
+    if (which === "Login")
+      this.setShowPasswordLogin(this.state.showPasswordLogin ^ 1);
+    else this.setShowPasswordSignUp(this.state.showPasswordSignUp ^ 1);
   };
 
-  const handleLogin = async () => {
-    if (loginEmail.trim() === "") {
+  handleLogin = () => {
+    if (this.state.loginEmail.trim() === "") {
       ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
       return;
     }
-    if (loginPassword.trim() === "") {
+    if (this.state.loginPassword.trim() === "") {
       ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
       return;
     }
 
     let ourUser = { name: "" };
-    Object.keys(selectUsers).filter((key) => {
+    Object.keys(this.state.users).forEach((key) => {
       if (
-        selectUsers[key.toString()].email.toLowerCase() ===
-          loginEmail.toLowerCase() &&
-        selectUsers[key.toString()].password === loginPassword
+        this.state.users[key].email.toLowerCase() ===
+        this.state.loginEmail.toLowerCase()
       )
-        ourUser = selectUsers[key];
+        ourUser = this.state.users[key];
     });
-
     if (ourUser.name === "")
       ToastAndroid.show("Invalid Credenials", ToastAndroid.SHORT);
     else {
-      setLoginEmail("");
-      setLoginPassword("");
-      setShowPasswordLogin(0);
-      dispatch(setCurrentUser({ user: ourUser }));
-      navigation.navigate("HomePage");
+      this.setState({
+        ...this.state,
+        loginEmail: "",
+        loginPassword: "",
+        showPasswordLogin: 0,
+      });
+      this.props.setCurrentUser({ user: ourUser });
+      this.props.navigation.navigate("HomePage");
     }
   };
 
-  const handleRegister = async () => {
-    if (signUpEmail.trim() === "") {
+  handleSignUp = async () => {
+    if (this.state.signUpEmail.trim() === "") {
       ToastAndroid.show("Enter Email", ToastAndroid.SHORT);
       return;
     }
-    if (signUpPassword.trim() === "") {
+    if (this.state.signUpPassword.trim() === "") {
       ToastAndroid.show("Enter Password", ToastAndroid.SHORT);
       return;
     }
 
     let alreadyResgistered = false;
-    for (const key in selectUsers) {
-      if (selectUsers[key].email === signUpEmail.toLowerCase()) {
+    for (const key in this.state.users) {
+      if (
+        this.state.users[key].email === this.state.signUpEmail.toLowerCase()
+      ) {
         ToastAndroid.show("User Already Registered", ToastAndroid.SHORT);
         alreadyResgistered = true;
         break;
@@ -123,33 +194,34 @@ export default function LoginPage({ navigation }) {
     if (alreadyResgistered) return;
 
     let pattern = /^[\w\.]+@gmail\.com$/g;
-    if (signUpEmail.match(pattern) === null) {
+    if (this.state.signUpEmail.match(pattern) === null) {
       ToastAndroid.show("Invalid Email", ToastAndroid.SHORT);
       return;
     }
 
-    let userName = signUpEmail.substring(0, signUpEmail.indexOf("@"));
+    let userName = this.state.signUpEmail.substring(
+      0,
+      this.state.signUpEmail.indexOf("@")
+    );
 
     let newId = Math.random() * Math.random() + "-" + Date.now();
     let newUser = {
       name: userName[0].toUpperCase() + userName.substring(1),
-      email: signUpEmail.toLowerCase(),
-      password: signUpPassword,
+      email: this.state.signUpEmail.toLowerCase(),
+      password: this.state.signUpPassword,
       userId: newId,
+      theme: "light",
     };
 
     let dataUsers = {};
     dataUsers[newId] = newUser;
+
     const jsonValue = JSON.stringify({
-      ...selectUsers,
+      ...this.state.users,
       ...dataUsers,
     });
 
-    dispatch(
-      addUser({
-        user: newUser,
-      })
-    );
+    this.props.addUser({ user: newUser });
 
     let error = false;
     await AsyncStorage.mergeItem("@Users_Array", jsonValue, (err) => {
@@ -165,114 +237,180 @@ export default function LoginPage({ navigation }) {
 
     if (!error) {
       ToastAndroid.show("Registeration Successful", ToastAndroid.SHORT);
-      switchTab(0);
+      this.setState({
+        ...this.state,
+        currentTab: 0,
+      });
     }
   };
 
-  return (
-    <ScrollView style={styles.scrollView}>
-      <View style={[styles.container, { height: height * 1.1 }]}>
-        <View style={styles.upperSphere} />
-        <View style={styles.lowerSphere} />
+  render() {
+    console.log(this.state.users);
+    return (
+      <ScrollView style={styles.scrollView}>
+        <StatusBar
+          translucent={true}
+          animated={true}
+          backgroundColor={"transparent"}
+          barStyle={"dark-content"}
+        />
         <View
-          style={[styles.card, { top: height * tabMul, left: width * 0.075 }]}
+          style={[
+            styles.container,
+            {
+              height: height * 1.05,
+            },
+          ]}
         >
-          <View style={styles.header}>
-            <Pressable
-              onPress={() => {
-                switchTab(0);
-              }}
-            >
-              <AppText
-                style={
-                  currentTab === 0 ? styles.currentTabText : styles.nextTabText
-                }
+          <View
+            style={[styles.upperSphere, { backgroundColor: colors.primary }]}
+          />
+          <View
+            style={[styles.lowerSphere, { backgroundColor: colors.secondary }]}
+          />
+          <View
+            style={[
+              styles.card,
+              {
+                top: height * 0.3,
+                left: width * 0.075,
+                backgroundColor: colors.white,
+              },
+            ]}
+          >
+            <View style={styles.header}>
+              <Pressable
+                onPress={() => {
+                  this.switchTab(0);
+                }}
               >
-                LOGIN
-              </AppText>
-            </Pressable>
-            <AppText style={styles.expander}></AppText>
-            <Pressable
-              onPress={() => {
-                switchTab(1);
-              }}
-            >
-              <AppText
-                style={
-                  currentTab === 1 ? styles.currentTabText : styles.nextTabText
-                }
+                <AppText
+                  style={
+                    this.state.currentTab === 0
+                      ? styles.currentTabText
+                      : styles.nextTabText
+                  }
+                >
+                  LOGIN
+                </AppText>
+              </Pressable>
+              <AppText style={styles.expander}></AppText>
+              <Pressable
+                onPress={() => {
+                  this.switchTab(1);
+                }}
               >
-                SIGN UP
-              </AppText>
-            </Pressable>
+                <AppText
+                  style={
+                    this.state.currentTab === 1
+                      ? styles.currentTabText
+                      : styles.nextTabText
+                  }
+                >
+                  SIGN UP
+                </AppText>
+              </Pressable>
+            </View>
+            {this.state.currentTab === 0 ? (
+              <View style={[styles.loginContainer]}>
+                <AppTextField
+                  // ref={refLoginInput}
+                  iconName="user"
+                  setValue={(newText) => this.setLoginEmail(newText)}
+                  value={this.state.loginEmail}
+                  placeholder="Email"
+                  style={styles.inputLogin}
+                />
+                <AppTextField
+                  type={
+                    this.state.showPasswordLogin === 0 ? "password" : "text"
+                  }
+                  iconName={
+                    this.state.showPasswordLogin === 0 ? "lock" : "unlock"
+                  }
+                  setValue={this.setLoginPassword}
+                  value={this.state.loginPassword}
+                  placeholder="Password"
+                  style={styles.inputLogin}
+                  onPressIcon={() => this.showPasswordCall("Login")}
+                />
+                <AppText style={[styles.forgetPass, { color: colors.grey }]}>
+                  Forgot Password?
+                </AppText>
+                <AppButton
+                  style={styles.loginButton}
+                  title="Login"
+                  onPress={this.handleLogin}
+                  // onPress={async () => {
+                  //   await AsyncStorage.clear().then((v) => console.log("Done"));
+                  // }}
+                />
+              </View>
+            ) : (
+              <View style={styles.loginContainer}>
+                <AppTextField
+                  // ref={refSignUpInput}
+                  iconName="user"
+                  setValue={this.setSignUpEmail}
+                  value={this.state.signUpEmail}
+                  placeholder="Email"
+                  style={styles.inputLogin}
+                />
+                <AppTextField
+                  type={
+                    this.state.showPasswordSignUp === 0 ? "password" : "text"
+                  }
+                  iconName={
+                    this.state.showPasswordSignUp === 0 ? "lock" : "unlock"
+                  }
+                  setValue={this.setSignUpPassword}
+                  value={this.state.signUpPassword}
+                  placeholder="Password"
+                  style={styles.inputLogin}
+                  onPressIcon={() => this.showPasswordCall("SignUp")}
+                />
+                <AppTextField
+                  iconName="check-circle-o"
+                  setValue={this.setSignUpOTP}
+                  value={this.state.signUpOTP}
+                  placeholder="OTP"
+                  style={styles.inputLogin}
+                />
+                <AppButton
+                  style={styles.loginButton}
+                  title="Register"
+                  onPress={this.handleSignUp}
+                />
+              </View>
+            )}
           </View>
-          {currentTab === 0 ? (
-            <View style={[styles.loginContainer]}>
-              <AppTextField
-                ref={refLoginInput}
-                iconName="user"
-                setValue={setLoginEmail}
-                value={loginEmail}
-                placeholder="Email"
-                style={styles.inputLogin}
-              />
-              <AppTextField
-                type={showPasswordLogin === 0 ? "password" : "text"}
-                iconName={showPasswordLogin === 0 ? "lock" : "unlock"}
-                setValue={setLoginPassword}
-                value={loginPassword}
-                placeholder="Password"
-                style={styles.inputLogin}
-                onPressIcon={() => showPasswordCall("Login")}
-              />
-              <AppText style={styles.forgetPass}>Forgot Password?</AppText>
-              <AppButton
-                style={styles.loginButton}
-                title="Login"
-                onPress={handleLogin}
-                // onPress={async () => {
-                //   await AsyncStorage.clear().then((v) => console.log("Done"));
-                // }}
-              />
-            </View>
-          ) : (
-            <View style={styles.loginContainer}>
-              <AppTextField
-                ref={refSignUpInput}
-                iconName="user"
-                setValue={setSignUpEmail}
-                value={signUpEmail}
-                placeholder="Email"
-                style={styles.inputLogin}
-              />
-              <AppTextField
-                type={showPasswordSignUp === 0 ? "password" : "text"}
-                iconName={showPasswordSignUp === 0 ? "lock" : "unlock"}
-                setValue={setSignUpPassword}
-                value={signUpPassword}
-                placeholder="Password"
-                style={styles.inputLogin}
-                onPressIcon={() => showPasswordCall("SignUp")}
-              />
-              <AppTextField
-                iconName="check-circle-o"
-                setValue={setSignUpOTP}
-                value={signUpOTP}
-                placeholder="OTP"
-                style={styles.inputLogin}
-              />
-              <AppButton
-                style={styles.loginButton}
-                title="Register"
-                onPress={handleRegister}
-              />
-            </View>
-          )}
         </View>
-      </View>
-    </ScrollView>
-  );
+      </ScrollView>
+    );
+  }
 }
+
+const mapStateToProps = (state) => {
+  return {
+    selectUsers: state.user.users,
+    fetchedUsers: state.user.isFetched,
+    themes: state.user.themes,
+  };
+};
+
+const mapDispatchToProps = (dispatch) => {
+  return {
+    fetchUser: () => dispatch({ type: FETCH_USER }),
+    setCurrentUser: (content) =>
+      dispatch({
+        type: SET_CURRENT_USER,
+        payload: content,
+      }),
+    addUser: (content) => dispatch({ type: ADD_USER, payload: content }),
+  };
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(LoginPage);
 
 //StyleSheet
 const styles = StyleSheet.create({
@@ -280,9 +418,9 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     position: "absolute",
     width: "85%",
+    height: "50%",
     elevation: 20,
     padding: 24,
-    backgroundColor: colors.white,
     alignItems: "center",
     borderRadius: 8,
   },
@@ -293,6 +431,7 @@ const styles = StyleSheet.create({
   currentTabText: {
     fontSize: 24,
     fontFamily: "Poppins_700Bold",
+    color: colors.black,
   },
   inputLogin: {
     marginVertical: 10,
@@ -300,7 +439,6 @@ const styles = StyleSheet.create({
   expander: { flex: 8 },
   forgetPass: {
     marginVertical: 20,
-    color: colors.grey,
     fontFamily: "Poppins_500Medium",
   },
   header: {
@@ -312,7 +450,6 @@ const styles = StyleSheet.create({
   lowerSphere: {
     width: "100%",
     height: 250,
-    backgroundColor: colors.secondary,
     borderTopLeftRadius: 200,
   },
   loginContainer: { width: "100%", alignItems: "center" },
@@ -330,7 +467,6 @@ const styles = StyleSheet.create({
   upperSphere: {
     width: "100%",
     height: 250,
-    backgroundColor: colors.primary,
     borderBottomEndRadius: 200,
   },
 });

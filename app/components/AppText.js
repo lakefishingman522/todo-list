@@ -21,6 +21,7 @@ import {
   Poppins_900Black_Italic,
 } from "@expo-google-fonts/poppins";
 import { Text } from "react-native";
+import { useSelector } from "react-redux";
 
 export default function AppText({ style, children, onPress, numberOfLines }) {
   let [fontsLoaded, error] = useFonts({
@@ -44,12 +45,20 @@ export default function AppText({ style, children, onPress, numberOfLines }) {
     Poppins_900Black_Italic,
   });
 
+  const themes = useSelector((state) => state.user.themes);
+  const currentUser = useSelector((state) => state.user.currentUser);
+
+  let color;
+  if (JSON.stringify(currentUser) !== "{}" && currentUser.theme === "light") {
+    color = themes.lightThemeColors.black;
+  } else color = themes.darkThemeColors.text;
+
   if (fontsLoaded) {
     return (
       <Text
         numberOfLines={numberOfLines}
         onPress={onPress}
-        style={[{ fontFamily: "Poppins_400Regular" }, style]}
+        style={[{ fontFamily: "Poppins_400Regular", color: color }, style]}
       >
         {children}
       </Text>

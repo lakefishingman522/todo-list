@@ -1,12 +1,13 @@
 import React from "react";
 import { View } from "react-native";
 import AppIcon from "./AppIcon";
+import colors from "../config/colors";
 
 function AppRoundedIcon({
   name,
   size = 24,
-  backgroundColor = "black",
-  iconColor = "white",
+  backgroundColor = colors.black,
+  iconColor = colors.white,
   style,
   iconType = "AntDesign",
   onPress,

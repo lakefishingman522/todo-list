@@ -26,9 +26,13 @@ export default function AppSBNB({
           animatedStyle,
           {
             backgroundColor: bgColor,
-            top: height * 0.96,
+            top: height * 0.95,
             width: width,
             height: height * 0.8,
+            borderTopWidth: 0.2,
+            borderStartWidth: 0.5,
+            borderEndWidth: 0.5,
+            borderColor: "white",
           },
         ]}
       >

@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet } from "react-native";
 
 import AppRoundedIcon from "./AppRoundedIcon";
+import colors from "../config/colors";
 
 function AppFloatingActionButton({
   onPress,
@@ -10,7 +11,7 @@ function AppFloatingActionButton({
   iconColor,
   size,
   rippleConfig = {
-    color: "white",
+    color: colors.white,
     foreground: true,
     radius: 30,
     borderless: true,
