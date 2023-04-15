@@ -8,6 +8,7 @@
 * I have used both class and functional components with redux implemented in both to understand it along with sagas
 * The Files Structure and code readability - at most Developer Standards
 * Working on One Last Feature will Update Soon...🚀
+* This Application is made with Expo CLI
 
 
 ## Tech Stack
@@ -51,6 +52,10 @@ React Native - javascript
 ![Resize(10)](https://user-images.githubusercontent.com/100402643/231754430-1e586296-59a9-456a-964a-fe3233ddbc36.jpg)
 ![Resize(11)](https://user-images.githubusercontent.com/100402643/231754439-6968e8b4-ab8e-410d-946d-ab2c9e8936ef.jpg)
 
+
+## Demo
+
+Uploading Soon...🚀
 
 ## Authors
 
