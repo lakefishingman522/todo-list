@@ -21,10 +21,16 @@
       "adaptiveIcon": {
         "foregroundImage": "./app/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.balasuriya.todolist"
     },
     "web": {
       "favicon": "./app/assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5e68b8a2-09aa-4e21-b556-8e99e47f9f1a"
+      }
     }
   }
 }

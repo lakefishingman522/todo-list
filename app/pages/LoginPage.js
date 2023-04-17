@@ -110,6 +110,8 @@ class LoginPage extends Component {
   };
 
   //Handlers
+  tabMul = () => (this.state.currentTab ? 0.282 : 0.3);
+
   switchTab = (tab) => {
     if (tab != this.state.currentTab) {
       if (tab) {
@@ -239,13 +241,16 @@ class LoginPage extends Component {
       ToastAndroid.show("Registeration Successful", ToastAndroid.SHORT);
       this.setState({
         ...this.state,
+        signUpEmail: "",
+        signUpPassword: "",
+        signUpOTP: "",
+        showPasswordSignUp: 0,
         currentTab: 0,
       });
     }
   };
 
   render() {
-    console.log(this.state.users);
     return (
       <ScrollView style={styles.scrollView}>
         <StatusBar
@@ -258,7 +263,7 @@ class LoginPage extends Component {
           style={[
             styles.container,
             {
-              height: height * 1.05,
+              height: height * 1.1,
             },
           ]}
         >
@@ -272,7 +277,7 @@ class LoginPage extends Component {
             style={[
               styles.card,
               {
-                top: height * 0.3,
+                top: height * this.tabMul(),
                 left: width * 0.075,
                 backgroundColor: colors.white,
               },
@@ -314,7 +319,6 @@ class LoginPage extends Component {
             {this.state.currentTab === 0 ? (
               <View style={[styles.loginContainer]}>
                 <AppTextField
-                  // ref={refLoginInput}
                   iconName="user"
                   setValue={(newText) => this.setLoginEmail(newText)}
                   value={this.state.loginEmail}
