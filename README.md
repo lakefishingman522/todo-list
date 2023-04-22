@@ -8,7 +8,7 @@
 * I have used both class and functional components with redux implemented in both to understand it along with sagas
 * The Files Structure and code readability - at most Developer Standards
 * Working on One Last Feature will Update Soon...🚀
-* This Application is made with Expo CLI
+* This Application is made with Expo CLI which is in main branch and React Native CLI which is master branch 
 
 
 ## Tech Stack
